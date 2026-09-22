@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plataforma de datos de taxis</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --amarillo:#F5C518; --amarillo-osc:#8A6D00;
+    --tinta:#1C2430; --tinta-sueve:#5A6472;
+    --papel:#F7F6F3; --tarjeta:#FFFFFF; --linea:#E4E1D9;
+    --verde:#1D7A54; --rojo:#B3261E; --azul:#1A5FA8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--papel);color:var(--tinta);
+       font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       font-size:15px;line-height:1.55}
+  button{font-family:inherit;cursor:pointer;border:none;border-radius:8px;
+         font-size:14px;font-weight:500;padding:10px 18px}
+  input,select,textarea{font-family:inherit;font-size:14px;padding:10px 12px;
+         border:1px solid var(--linea);border-radius:8px;background:#fff;width:100%}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--amarillo);outline-offset:-1px}
+
+  /* ---------- Login ---------- */
+  #login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+  .caja-login{background:var(--tarjeta);border:1px solid var(--linea);border-radius:14px;
+              padding:32px;width:100%;max-width:420px}
+  .caja-login h1{font-size:21px;margin:0 0 4px;font-weight:600}
+  .caja-login p.sub{margin:0 0 24px;color:var(--tinta-sueve);font-size:14px}
+  .campo{margin-bottom:14px}
+  .campo label{display:block;font-size:13px;color:var(--tinta-sueve);margin-bottom:5px}
+  .btn-principal{background:var(--tinta);color:#fff;width:100%;padding:12px}
+  .btn-principal:hover{background:#000}
+  .usuarios-demo{margin-top:22px;padding-top:18px;border-top:1px solid var(--linea)}
+  .usuarios-demo h2{font-size:13px;margin:0 0 10px;color:var(--tinta-sueve);font-weight:500}
+  .chip{display:inline-block;background:#F1EFE8;border:1px solid var(--linea);
+        border-radius:20px;padding:5px 12px;font-size:12.5px;margin:0 6px 6px 0;cursor:pointer}
+  .chip:hover{background:var(--amarillo);border-color:var(--amarillo)}
+
+  /* ---------- App ---------- */
+  #app{display:none}
+  header{background:var(--tinta);color:#fff;padding:12px 22px;display:flex;
+         align-items:center;gap:14px;flex-wrap:wrap}
+  header .marca{font-weight:600;font-size:15px}
+  header .marca i{color:var(--amarillo);font-style:normal}
+  .etiqueta{background:rgba(255,255,255,.14);padding:3px 10px;border-radius:20px;font-size:12.5px}
+  .etiqueta.modo{background:var(--amarillo);color:var(--amarillo-osc);font-weight:500}
+  header .hueco{flex:1}
+  .btn-salir{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.3);padding:6px 14px}
+
+  main{max-width:1280px;margin:0 auto;padding:22px;
+       display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
+  @media(max-width:1000px){main{grid-template-columns:1fr}}
+
+  .tarjeta{background:var(--tarjeta);border:1px solid var(--linea);border-radius:12px;
+           padding:18px;margin-bottom:22px}
+  .tarjeta h2{font-size:15px;margin:0 0 14px;font-weight:600;
+              display:flex;align-items:center;gap:8px}
+  .tarjeta h2 .contador{font-size:12px;color:var(--tinta-sueve);font-weight:400}
+
+  /* ---------- Chat ---------- */
+  #log{height:430px;overflow-y:auto;display:flex;flex-direction:column;gap:11px;
+       padding:4px 2px;margin-bottom:12px}
+  .msj{max-width:84%;padding:10px 14px;border-radius:13px;font-size:14px;white-space:pre-wrap;
+       word-wrap:break-word}
+  .msj.yo{align-self:flex-end;background:var(--amarillo);color:#3A2E00;border-bottom-right-radius:3px}
+  .msj.bot{align-self:flex-start;background:#F1EFE8;border-bottom-left-radius:3px}
+  .msj.err{align-self:center;background:#FCEBEA;color:var(--rojo);font-size:13px}
+  .msj .quien{display:block;font-size:11px;opacity:.65;margin-bottom:3px}
+  .msj .tools{display:block;margin-top:7px;padding-top:7px;border-top:1px solid rgba(0,0,0,.08);
+              font-size:11.5px;color:var(--tinta-sueve);font-family:ui-monospace,monospace}
+  .msj .aviso{display:block;margin-top:8px;padding:7px 10px;background:#FFF6DB;
+              border-left:3px solid var(--amarillo);border-radius:0;font-size:12.5px;color:var(--amarillo-osc)}
+  form#chat{display:flex;gap:9px}
+  form#chat input{flex:1}
+  form#chat button{background:var(--tinta);color:#fff;white-space:nowrap}
+  .sugerencias{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+  .sug{background:#fff;border:1px solid var(--linea);border-radius:18px;padding:5px 11px;
+       font-size:12.5px;cursor:pointer;color:var(--tinta-sueve)}
+  .sug:hover{border-color:var(--amarillo);color:var(--tinta)}
+
+  /* ---------- KPIs ---------- */
+  .kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:11px}
+  .kpi{background:#F9F8F5;border:1px solid var(--linea);border-radius:10px;padding:13px}
+  .kpi .val{font-size:22px;font-weight:600;letter-spacing:-.4px}
+  .kpi .et{font-size:12px;color:var(--tinta-sueve);margin-top:2px}
+  .kpi.marcado{background:#FFF6DB;border-color:var(--amarillo)}
+
+  /* ---------- Correcciones ---------- */
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;font-weight:500;color:var(--tinta-sueve);font-size:12px;
+     padding:7px 8px;border-bottom:1px solid var(--linea)}
+  td{padding:8px;border-bottom:1px solid #F0EEE8;vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  .tag{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11.5px;font-weight:500}
+  .tag.corr{background:#FFF6DB;color:var(--amarillo-osc)}
+  .tag.canc{background:#FCEBEA;color:var(--rojo)}
+  .tachado{text-decoration:line-through;color:var(--tinta-sueve)}
+  .rejilla-form{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+  .btn-corregir{background:var(--amarillo);color:var(--amarillo-osc);width:100%}
+  .btn-cancelar{background:#fff;color:var(--rojo);border:1px solid var(--rojo);width:100%;margin-top:8px}
+  .vacio{color:var(--tinta-sueve);font-size:13px;padding:10px 0}
+  .nota{font-size:12.5px;color:var(--tinta-sueve);margin:0 0 12px}
+  .ok{color:var(--verde);font-size:13px;margin-top:9px}
+  .fallo{color:var(--rojo);font-size:13px;margin-top:9px}
+  canvas{max-height:210px}
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div id="login">
+  <div class="caja-login">
+    <h1>Plataforma de datos de taxis</h1>
+    <p class="sub">Datos corregibles (E6) sobre plataforma multiempresa (E7)</p>
+
+    <form id="form-login">
+      <div class="campo">
+        <label for="email">Correo</label>
+        <input id="email" type="email" autocomplete="username" required>
+      </div>
+      <div class="campo">
+        <label for="password">Contraseña</label>
+        <input id="password" type="password" autocomplete="current-password" required>
+      </div>
+      <button class="btn-principal" type="submit">Entrar</button>
+      <div id="error-login" class="fallo" style="display:none"></div>
+    </form>
+
+    <div class="usuarios-demo">
+      <h2>Usuarios de prueba (contraseña: demo1234)</h2>
+      <span class="chip" data-email="ana@taxisnorte.es">Ana · Taxis del Norte · usuario</span>
+      <span class="chip" data-email="luis@taxisnorte.es">Luis · Taxis del Norte · operador</span>
+      <span class="chip" data-email="marta@movilidadsur.es">Marta · Movilidad Sur · usuario</span>
+      <span class="chip" data-email="pablo@movilidadsur.es">Pablo · Movilidad Sur · operador</span>
+      <span class="chip" data-email="auditor@plataforma.es">Auditor · global</span>
+    </div>
+  </div>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="app">
+  <header>
+    <span class="marca"><i>●</i> Plataforma de taxis</span>
+    <span class="etiqueta" id="et-empresa"></span>
+    <span class="etiqueta" id="et-rol"></span>
+    <span class="etiqueta modo" id="et-modo"></span>
+    <span class="hueco"></span>
+    <span class="etiqueta" id="et-email"></span>
+    <button class="btn-salir" onclick="salir()">Salir</button>
+  </header>
+
+  <main>
+    <!-- Columna izquierda: chat -->
+    <section>
+      <div class="tarjeta">
+        <h2>Asistente conversacional</h2>
+        <div class="sugerencias" id="sugerencias"></div>
+        <div id="log"></div>
+        <form id="chat">
+          <input id="mensaje" placeholder="Escribe tu pregunta..." autocomplete="off">
+          <button type="submit" id="btn-enviar">Enviar</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- Columna derecha: datos -->
+    <section>
+      <div class="tarjeta">
+        <h2>Métricas de mi empresa</h2>
+        <div class="kpis" id="kpis"></div>
+      </div>
+
+      <div class="tarjeta">
+        <h2>Viajes por distrito</h2>
+        <canvas id="grafica-borough"></canvas>
+      </div>
+
+      <div class="tarjeta">
+        <h2>Demanda por hora</h2>
+        <canvas id="grafica-horas"></canvas>
+      </div>
+
+      <div class="tarjeta" id="panel-correccion" style="display:none">
+        <h2>Registrar corrección de un proveedor</h2>
+        <p class="nota">El valor original se conserva; solo se recalculan las métricas
+           del día y distrito afectados.</p>
+        <div class="rejilla-form">
+          <div>
+            <label class="et" for="c-viaje">Viaje</label>
+            <select id="c-viaje"></select>
+          </div>
+          <div>
+            <label class="et" for="c-campo">Campo</label>
+            <select id="c-campo">
+              <option value="importe_total">Importe total</option>
+              <option value="distancia">Distancia</option>
+              <option value="pasajeros">Pasajeros</option>
+              <option value="propina">Propina</option>
+            </select>
+          </div>
+          <div>
+            <label class="et" for="c-valor">Valor corregido</label>
+            <input id="c-valor" type="number" step="0.01">
+          </div>
+          <div>
+            <label class="et" for="c-motivo">Motivo</label>
+            <input id="c-motivo" placeholder="Tarifa mal registrada">
+          </div>
+        </div>
+        <button class="btn-corregir" onclick="enviarCorreccion()">Aplicar corrección</button>
+        <button class="btn-cancelar" onclick="enviarCancelacion()">Cancelar este viaje</button>
+        <div id="resultado-correccion"></div>
+      </div>
+
+      <div class="tarjeta">
+        <h2>Historial de correcciones <span class="contador" id="cont-corr"></span></h2>
+        <div id="tabla-correcciones"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+const API = (location.hostname === "localhost" || location.hostname === "127.0.0.1")
+  ? "http://localhost:8000" : `http://${location.hostname}:8000`;
+
+let token = null, perfil = null, graficaBorough = null, graficaHoras = null;
+const sessionId = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
+
+/* ---------------- utilidades ---------------- */
+async function api(ruta, opciones = {}) {
+  const cabeceras = Object.assign({"Content-Type": "application/json"}, opciones.headers || {});
+  if (token) cabeceras["Authorization"] = "Bearer " + token;
+  const r = await fetch(API + ruta, Object.assign({}, opciones, {headers: cabeceras}));
+  const cuerpo = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(cuerpo.detail || `Error ${r.status}`);
+  return cuerpo;
+}
+const eur = n => (n ?? 0).toLocaleString("es-ES", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+/* ---------------- login ---------------- */
+document.querySelectorAll(".chip").forEach(chip => {
+  chip.addEventListener("click", () => {
+    document.getElementById("email").value = chip.dataset.email;
+    document.getElementById("password").value = "demo1234";
+  });
+});
+
+document.getElementById("form-login").addEventListener("submit", async e => {
+  e.preventDefault();
+  const err = document.getElementById("error-login");
+  err.style.display = "none";
+  try {
+    const datos = await api("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({
+        email: document.getElementById("email").value,
+        password: document.getElementById("password").value,
+      }),
+    });
+    token = datos.token;
+    await iniciarSesion();
+  } catch (ex) {
+    err.textContent = ex.message;
+    err.style.display = "block";
+  }
+});
+
+function salir() {
+  token = null; perfil = null;
+  document.getElementById("app").style.display = "none";
+  document.getElementById("login").style.display = "flex";
+  document.getElementById("log").innerHTML = "";
+}
+
+async function iniciarSesion() {
+  perfil = await api("/auth/yo");
+  const salud = await fetch(API + "/salud").then(r => r.json()).catch(() => ({}));
+
+  document.getElementById("et-empresa").textContent = perfil.empresa;
+  document.getElementById("et-rol").textContent = "rol: " + perfil.rol;
+  document.getElementById("et-email").textContent = perfil.email;
+  document.getElementById("et-modo").textContent = "motor: " + (salud.modo_chatbot || "?");
+
+  document.getElementById("login").style.display = "none";
+  document.getElementById("app").style.display = "block";
+  document.getElementById("panel-correccion").style.display =
+    perfil.puede_corregir ? "block" : "none";
+
+  pintarSugerencias();
+  añadirMensaje(
+    `Hola. Estás conectado como ${perfil.email} (${perfil.rol}) de ${perfil.empresa}. ` +
+    `Solo puedo consultar los datos de tu empresa.`, "bot", "Asistente");
+  await refrescarTodo();
+}
+
+function pintarSugerencias() {
+  const base = [
+    "¿Cuántos viajes tenemos?",
+    "Tarifa media en Manhattan",
+    "Zonas con más viajes",
+    "¿A qué hora hay más demanda?",
+    "¿Por qué ha cambiado esa cifra?",
+  ];
+  base.push("Dame las métricas globales de la plataforma");
+  const cont = document.getElementById("sugerencias");
+  cont.innerHTML = "";
+  base.forEach(t => {
+    const s = document.createElement("span");
+    s.className = "sug"; s.textContent = t;
+    s.onclick = () => { document.getElementById("mensaje").value = t;
+                        document.getElementById("chat").requestSubmit(); };
+    cont.appendChild(s);
+  });
+}
+
+/* ---------------- chat ---------------- */
+function añadirMensaje(texto, tipo, quien, extra) {
+  const log = document.getElementById("log");
+  const div = document.createElement("div");
+  div.className = "msj " + tipo;
+  if (quien) {
+    const s = document.createElement("span");
+    s.className = "quien"; s.textContent = quien; div.appendChild(s);
+  }
+  div.appendChild(document.createTextNode(texto));
+  if (extra && extra.aviso) {
+    const a = document.createElement("span");
+    a.className = "aviso"; a.textContent = "⚠ " + extra.aviso; div.appendChild(a);
+  }
+  if (extra && extra.tools && extra.tools.length) {
+    const t = document.createElement("span");
+    t.className = "tools";
+    t.textContent = "herramientas: " + extra.tools.join(", ");
+    div.appendChild(t);
+  }
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+document.getElementById("chat").addEventListener("submit", async e => {
+  e.preventDefault();
+  const campo = document.getElementById("mensaje");
+  const mensaje = campo.value.trim();
+  if (!mensaje) return;
+  añadirMensaje(mensaje, "yo", "Tú");
+  campo.value = "";
+  const btn = document.getElementById("btn-enviar");
+  btn.disabled = true; btn.textContent = "...";
+
+  try {
+    const r = await api("/chat", {
+      method: "POST",
+      body: JSON.stringify({mensaje, session_id: sessionId}),
+    });
+    const usadas = (r.herramientas_usadas || []).map(h => h.herramienta);
+    let aviso = null;
+    (r.herramientas_usadas || []).forEach(h => {
+      if (h.resultado && h.resultado.aviso_correcciones) aviso = h.resultado.aviso_correcciones;
+    });
+    let quien = "Asistente · " + r.empresa;
+    if (r.degradado_desde) {
+      quien += " · respaldo por reglas";
+      document.getElementById("et-modo").textContent = "motor: reglas (respaldo)";
+    } else if (r.modelo) {
+      quien += " · " + r.modelo;
+    }
+    añadirMensaje(r.respuesta, "bot", quien, {tools: usadas, aviso});
+    if (usadas.some(u => ["registrar_correccion", "cancelar_viaje"].includes(u))) {
+      await refrescarTodo();
+    }
+  } catch (ex) {
+    añadirMensaje(ex.message, "err");
+  } finally {
+    btn.disabled = false; btn.textContent = "Enviar";
+  }
+});
+
+/* ---------------- panel de datos ---------------- */
+async function refrescarTodo() {
+  await Promise.all([refrescarKpis(), refrescarGraficas(),
+                     refrescarCorrecciones(), refrescarViajes()]);
+}
+
+async function refrescarKpis() {
+  const d = await api("/datos/resumen");
+  const cont = document.getElementById("kpis");
+  cont.innerHTML = `
+    <div class="kpi"><div class="val">${d.num_viajes}</div><div class="et">viajes vigentes</div></div>
+    <div class="kpi"><div class="val">${eur(d.importe_medio)} €</div><div class="et">importe medio</div></div>
+    <div class="kpi"><div class="val">${eur(d.importe_total)} €</div><div class="et">facturación total</div></div>
+    <div class="kpi ${d.viajes_corregidos || d.viajes_cancelados ? "marcado" : ""}">
+      <div class="val">${d.viajes_corregidos} / ${d.viajes_cancelados}</div>
+      <div class="et">corregidos / cancelados</div></div>`;
+}
+
+async function refrescarGraficas() {
+  const [b, h] = await Promise.all([api("/datos/boroughs"), api("/datos/horas")]);
+
+  if (graficaBorough) graficaBorough.destroy();
+  graficaBorough = new Chart(document.getElementById("grafica-borough"), {
+    type: "bar",
+    data: {
+      labels: b.boroughs.map(x => x.borough),
+      datasets: [{label: "Viajes", data: b.boroughs.map(x => x.num_viajes),
+                  backgroundColor: "#F5C518", borderRadius: 4}],
+    },
+    options: {responsive: true, plugins: {legend: {display: false}},
+              scales: {y: {beginAtZero: true}}},
+  });
+
+  if (graficaHoras) graficaHoras.destroy();
+  graficaHoras = new Chart(document.getElementById("grafica-horas"), {
+    type: "line",
+    data: {
+      labels: h.horas.map(x => String(x.hora).padStart(2, "0") + "h"),
+      datasets: [{label: "Viajes", data: h.horas.map(x => x.num_viajes),
+                  borderColor: "#1C2430", backgroundColor: "rgba(28,36,48,.08)",
+                  fill: true, tension: .3, pointRadius: 2}],
+    },
+    options: {responsive: true, plugins: {legend: {display: false}},
+              scales: {y: {beginAtZero: true}}},
+  });
+}
+
+async function refrescarCorrecciones() {
+  const d = await api("/correcciones?limite=15");
+  document.getElementById("cont-corr").textContent = d.total ? `(${d.total})` : "";
+  const cont = document.getElementById("tabla-correcciones");
+  if (!d.correcciones.length) {
+    cont.innerHTML = `<p class="vacio">Todavía no hay correcciones. Las métricas
+      reflejan los datos tal y como se ingirieron.</p>`;
+    return;
+  }
+  const filas = d.correcciones.map(c => {
+    const cuando = c.aplicada_en.slice(0, 19).replace("T", " ");
+    const cambio = c.tipo === "cancelacion"
+      ? `<span class="tachado">${eur(c.valor_original)} €</span> → excluido`
+      : `<span class="tachado">${eur(c.valor_original)}</span> → <strong>${eur(c.valor_nuevo)}</strong>`;
+    const tag = c.tipo === "cancelacion"
+      ? `<span class="tag canc">cancelación</span>`
+      : `<span class="tag corr">${c.campo}</span>`;
+    return `<tr><td>#${c.viaje_id}</td><td>${tag}</td><td>${cambio}</td>
+            <td>${c.motivo || ""}<br><span style="color:var(--tinta-sueve);font-size:11.5px">
+            ${cuando} · ${c.aplicada_por}</span></td></tr>`;
+  }).join("");
+  cont.innerHTML = `<table><thead><tr><th>Viaje</th><th>Tipo</th><th>Cambio</th>
+                    <th>Motivo y trazabilidad</th></tr></thead><tbody>${filas}</tbody></table>`;
+}
+
+async function refrescarViajes() {
+  if (!perfil.puede_corregir) return;
+  const d = await api("/datos/viajes?limite=25");
+  const sel = document.getElementById("c-viaje");
+  sel.innerHTML = d.viajes.map(v =>
+    `<option value="${v.id}">#${v.id} · ${v.zona_origen || "?"} · ${eur(v.importe_total)} €${
+      v.cancelado ? " (cancelado)" : v.corregido ? " (corregido)" : ""}</option>`).join("");
+}
+
+/* ---------------- correcciones ---------------- */
+async function enviarCorreccion() {
+  const salida = document.getElementById("resultado-correccion");
+  salida.innerHTML = "";
+  const valor = parseFloat(document.getElementById("c-valor").value);
+  const motivo = document.getElementById("c-motivo").value.trim();
+  if (isNaN(valor)) { salida.innerHTML = `<p class="fallo">Indica el valor corregido.</p>`; return; }
+  if (motivo.length < 3) { salida.innerHTML = `<p class="fallo">Indica el motivo de la corrección.</p>`; return; }
+
+  try {
+    const r = await api("/correcciones", {
+      method: "POST",
+      body: JSON.stringify({
+        viaje_id: parseInt(document.getElementById("c-viaje").value, 10),
+        campo: document.getElementById("c-campo").value,
+        valor_nuevo: valor, motivo,
+      }),
+    });
+    salida.innerHTML = `<p class="ok">Corrección aplicada: ${r.campo} pasó de
+      ${eur(r.valor_original)} a ${eur(r.valor_nuevo)}. ${r.nota}</p>`;
+    document.getElementById("c-motivo").value = "";
+    document.getElementById("c-valor").value = "";
+    await refrescarTodo();
+  } catch (ex) {
+    salida.innerHTML = `<p class="fallo">${ex.message}</p>`;
+  }
+}
+
+async function enviarCancelacion() {
+  const salida = document.getElementById("resultado-correccion");
+  salida.innerHTML = "";
+  const motivo = document.getElementById("c-motivo").value.trim();
+  if (motivo.length < 3) { salida.innerHTML = `<p class="fallo">Indica el motivo de la cancelación.</p>`; return; }
+  try {
+    const r = await api("/correcciones/cancelar", {
+      method: "POST",
+      body: JSON.stringify({
+        viaje_id: parseInt(document.getElementById("c-viaje").value, 10), motivo,
+      }),
+    });
+    salida.innerHTML = `<p class="ok">Viaje ${r.viaje_id} cancelado. ${r.nota}</p>`;
+    document.getElementById("c-motivo").value = "";
+    await refrescarTodo();
+  } catch (ex) {
+    salida.innerHTML = `<p class="fallo">${ex.message}</p>`;
+  }
+}
+</script>
+</body>
+</html>
