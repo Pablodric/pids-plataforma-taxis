@@ -4,12 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Plataforma de datos de taxis</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<!-- Chart.js va incluido en el proyecto: el panel funciona sin internet -->
+<script src="vendor/chart.umd.js"></script>
 <style>
   :root{
-    --amarillo:#F5C518; --amarillo-osc:#8A6D00;
-    --tinta:#1C2430; --tinta-sueve:#5A6472;
-    --papel:#F7F6F3; --tarjeta:#FFFFFF; --linea:#E4E1D9;
+    --amarillo:#F5C518; --amarillo-osc:#7A6100; --amarillo-claro:#FFF6DB;
+    --tinta:#1C2430; --tinta-suave:#5A6472;
+    --papel:#F7F6F3; --tarjeta:#FFFFFF; --linea:#E4E1D9; --gris:#F1EFE8;
     --verde:#1D7A54; --rojo:#B3261E; --azul:#1A5FA8;
   }
   *{box-sizing:border-box}
@@ -18,93 +19,131 @@
        font-size:15px;line-height:1.55}
   button{font-family:inherit;cursor:pointer;border:none;border-radius:8px;
          font-size:14px;font-weight:500;padding:10px 18px}
-  input,select,textarea{font-family:inherit;font-size:14px;padding:10px 12px;
-         border:1px solid var(--linea);border-radius:8px;background:#fff;width:100%}
-  input:focus,select:focus,textarea:focus{outline:2px solid var(--amarillo);outline-offset:-1px}
+  button:disabled{opacity:.55;cursor:wait}
+  input,select{font-family:inherit;font-size:14px;padding:10px 12px;
+         border:1px solid var(--linea);border-radius:8px;background:#fff;width:100%;color:inherit}
+  input:focus,select:focus,button:focus-visible{outline:2px solid var(--amarillo);outline-offset:-1px}
+  a{color:var(--azul)}
 
   /* ---------- Login ---------- */
-  #login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+  #login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px}
   .caja-login{background:var(--tarjeta);border:1px solid var(--linea);border-radius:14px;
-              padding:32px;width:100%;max-width:420px}
+              padding:32px;width:100%;max-width:440px}
   .caja-login h1{font-size:21px;margin:0 0 4px;font-weight:600}
-  .caja-login p.sub{margin:0 0 24px;color:var(--tinta-sueve);font-size:14px}
+  .caja-login p.sub{margin:0 0 24px;color:var(--tinta-suave);font-size:14px}
   .campo{margin-bottom:14px}
-  .campo label{display:block;font-size:13px;color:var(--tinta-sueve);margin-bottom:5px}
+  .campo label{display:block;font-size:13px;color:var(--tinta-suave);margin-bottom:5px}
   .btn-principal{background:var(--tinta);color:#fff;width:100%;padding:12px}
   .btn-principal:hover{background:#000}
   .usuarios-demo{margin-top:22px;padding-top:18px;border-top:1px solid var(--linea)}
-  .usuarios-demo h2{font-size:13px;margin:0 0 10px;color:var(--tinta-sueve);font-weight:500}
-  .chip{display:inline-block;background:#F1EFE8;border:1px solid var(--linea);
-        border-radius:20px;padding:5px 12px;font-size:12.5px;margin:0 6px 6px 0;cursor:pointer}
+  .usuarios-demo h2{font-size:13px;margin:0 0 10px;color:var(--tinta-suave);font-weight:500}
+  .chip{display:inline-block;background:var(--gris);border:1px solid var(--linea);color:var(--tinta);
+        border-radius:20px;padding:5px 12px;font-size:12.5px;margin:0 6px 6px 0;font-weight:400}
   .chip:hover{background:var(--amarillo);border-color:var(--amarillo)}
 
   /* ---------- App ---------- */
   #app{display:none}
   header{background:var(--tinta);color:#fff;padding:12px 22px;display:flex;
-         align-items:center;gap:14px;flex-wrap:wrap}
-  header .marca{font-weight:600;font-size:15px}
+         align-items:center;gap:10px;flex-wrap:wrap}
+  header .marca{font-weight:600;font-size:15px;margin-right:6px}
   header .marca i{color:var(--amarillo);font-style:normal}
-  .etiqueta{background:rgba(255,255,255,.14);padding:3px 10px;border-radius:20px;font-size:12.5px}
-  .etiqueta.modo{background:var(--amarillo);color:var(--amarillo-osc);font-weight:500}
+  .etiqueta{background:rgba(255,255,255,.14);padding:3px 10px;border-radius:20px;font-size:12.5px;white-space:nowrap}
+  .etiqueta.modo{background:var(--amarillo);color:#3A2E00;font-weight:500}
+  .etiqueta.cuota.baja{background:#E8A33D;color:#2B1B00}
   header .hueco{flex:1}
   .btn-salir{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.3);padding:6px 14px}
 
-  main{max-width:1280px;margin:0 auto;padding:22px;
-       display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
-  @media(max-width:1000px){main{grid-template-columns:1fr}}
+  main{max-width:1320px;margin:0 auto;padding:22px;
+       display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;align-items:start}
+  @media(max-width:1000px){main{grid-template-columns:minmax(0,1fr);padding:16px}}
+  .col-chat{position:sticky;top:16px}
+  @media(max-width:1000px){.col-chat{position:static}}
 
   .tarjeta{background:var(--tarjeta);border:1px solid var(--linea);border-radius:12px;
            padding:18px;margin-bottom:22px}
   .tarjeta h2{font-size:15px;margin:0 0 14px;font-weight:600;
-              display:flex;align-items:center;gap:8px}
-  .tarjeta h2 .contador{font-size:12px;color:var(--tinta-sueve);font-weight:400}
+              display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .tarjeta h2 .contador{font-size:12px;color:var(--tinta-suave);font-weight:400}
+  .tarjeta h2 .accion{margin-left:auto;background:none;color:var(--tinta-suave);padding:2px 6px;
+                      font-size:12.5px;font-weight:400;text-decoration:underline}
+  .dos-graficas{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  @media(max-width:640px){.dos-graficas{grid-template-columns:1fr}}
 
   /* ---------- Chat ---------- */
-  #log{height:430px;overflow-y:auto;display:flex;flex-direction:column;gap:11px;
+  #log{height:min(470px,58vh);overflow-y:auto;display:flex;flex-direction:column;gap:11px;
        padding:4px 2px;margin-bottom:12px}
-  .msj{max-width:84%;padding:10px 14px;border-radius:13px;font-size:14px;white-space:pre-wrap;
-       word-wrap:break-word}
-  .msj.yo{align-self:flex-end;background:var(--amarillo);color:#3A2E00;border-bottom-right-radius:3px}
-  .msj.bot{align-self:flex-start;background:#F1EFE8;border-bottom-left-radius:3px}
+  .msj{max-width:88%;padding:10px 14px;border-radius:13px;font-size:14px;word-wrap:break-word}
+  .msj p{margin:0 0 6px} .msj p:last-child{margin:0}
+  .msj ul,.msj ol{margin:4px 0 6px;padding-left:20px} .msj li{margin:1px 0}
+  .msj.yo{align-self:flex-end;background:var(--amarillo);color:#3A2E00;border-bottom-right-radius:3px;white-space:pre-wrap}
+  .msj.bot{align-self:flex-start;background:var(--gris);border-bottom-left-radius:3px}
   .msj.err{align-self:center;background:#FCEBEA;color:var(--rojo);font-size:13px}
+  .msj.escribiendo{color:var(--tinta-suave);font-style:italic}
   .msj .quien{display:block;font-size:11px;opacity:.65;margin-bottom:3px}
   .msj .tools{display:block;margin-top:7px;padding-top:7px;border-top:1px solid rgba(0,0,0,.08);
-              font-size:11.5px;color:var(--tinta-sueve);font-family:ui-monospace,monospace}
-  .msj .aviso{display:block;margin-top:8px;padding:7px 10px;background:#FFF6DB;
-              border-left:3px solid var(--amarillo);border-radius:0;font-size:12.5px;color:var(--amarillo-osc)}
+              font-size:11.5px;color:var(--tinta-suave);font-family:ui-monospace,monospace}
+  .msj .aviso{display:block;margin-top:8px;padding:7px 10px;background:var(--amarillo-claro);
+              border-left:3px solid var(--amarillo);font-size:12.5px;color:var(--amarillo-osc)}
+  .confirmar{display:flex;gap:8px;margin-top:9px}
+  .confirmar button{padding:6px 16px;font-size:13px}
+  .confirmar .si{background:var(--tinta);color:#fff} .confirmar .no{background:#fff;border:1px solid var(--linea)}
   form#chat{display:flex;gap:9px}
-  form#chat input{flex:1}
+  form#chat input{flex:1;min-width:0}
   form#chat button{background:var(--tinta);color:#fff;white-space:nowrap}
   .sugerencias{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
   .sug{background:#fff;border:1px solid var(--linea);border-radius:18px;padding:5px 11px;
-       font-size:12.5px;cursor:pointer;color:var(--tinta-sueve)}
+       font-size:12.5px;color:var(--tinta-suave);font-weight:400}
   .sug:hover{border-color:var(--amarillo);color:var(--tinta)}
 
   /* ---------- KPIs ---------- */
-  .kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:11px}
-  .kpi{background:#F9F8F5;border:1px solid var(--linea);border-radius:10px;padding:13px}
-  .kpi .val{font-size:22px;font-weight:600;letter-spacing:-.4px}
-  .kpi .et{font-size:12px;color:var(--tinta-sueve);margin-top:2px}
-  .kpi.marcado{background:#FFF6DB;border-color:var(--amarillo)}
+  .kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+  .kpi{background:#F9F8F5;border:1px solid var(--linea);border-radius:10px;padding:13px;transition:background .6s}
+  .kpi .val{font-size:22px;font-weight:600;letter-spacing:-.4px;font-variant-numeric:tabular-nums}
+  .kpi .et{font-size:12px;color:var(--tinta-suave);margin-top:2px}
+  .kpi.marcado{background:var(--amarillo-claro);border-color:var(--amarillo)}
+  .kpi.cambio{background:#DDF3E8}
+  .pie-kpi{font-size:12px;color:var(--tinta-suave);margin:10px 0 0}
 
-  /* ---------- Correcciones ---------- */
+  /* ---------- Tablas y formularios ---------- */
+  .tabla-scroll{overflow-x:auto}
   table{width:100%;border-collapse:collapse;font-size:13px}
-  th{text-align:left;font-weight:500;color:var(--tinta-sueve);font-size:12px;
+  th{text-align:left;font-weight:500;color:var(--tinta-suave);font-size:12px;
      padding:7px 8px;border-bottom:1px solid var(--linea)}
   td{padding:8px;border-bottom:1px solid #F0EEE8;vertical-align:top}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
   tr:last-child td{border-bottom:none}
-  .tag{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11.5px;font-weight:500}
-  .tag.corr{background:#FFF6DB;color:var(--amarillo-osc)}
+  .tag{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11.5px;font-weight:500;white-space:nowrap}
+  .tag.corr{background:var(--amarillo-claro);color:var(--amarillo-osc)}
   .tag.canc{background:#FCEBEA;color:var(--rojo)}
-  .tachado{text-decoration:line-through;color:var(--tinta-sueve)}
+  .tachado{text-decoration:line-through;color:var(--tinta-suave)}
+  .sutil{color:var(--tinta-suave);font-size:11.5px}
   .rejilla-form{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
-  .btn-corregir{background:var(--amarillo);color:var(--amarillo-osc);width:100%}
-  .btn-cancelar{background:#fff;color:var(--rojo);border:1px solid var(--rojo);width:100%;margin-top:8px}
-  .vacio{color:var(--tinta-sueve);font-size:13px;padding:10px 0}
-  .nota{font-size:12.5px;color:var(--tinta-sueve);margin:0 0 12px}
-  .ok{color:var(--verde);font-size:13px;margin-top:9px}
-  .fallo{color:var(--rojo);font-size:13px;margin-top:9px}
-  canvas{max-height:210px}
+  @media(max-width:520px){.rejilla-form{grid-template-columns:1fr}}
+  .rejilla-form label{display:block;font-size:12px;color:var(--tinta-suave);margin-bottom:4px}
+  .actual{font-size:12.5px;color:var(--tinta-suave);margin:-2px 0 10px}
+  .actual b{color:var(--tinta)}
+  .botones{display:grid;grid-template-columns:2fr 1fr;gap:8px}
+  .btn-corregir{background:var(--amarillo);color:#3A2E00}
+  .btn-cancelar{background:#fff;color:var(--rojo);border:1px solid var(--rojo)}
+  .vacio{color:var(--tinta-suave);font-size:13px;padding:10px 0;margin:0}
+  .sello{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;
+         padding:3px 10px;border-radius:14px;margin-left:auto;cursor:help;white-space:nowrap}
+  .sello.ok{background:#DDF3E8;color:var(--verde)} .sello.roto{background:#FCEBEA;color:var(--rojo)}
+  .sello code{font-family:ui-monospace,monospace;font-size:11px;opacity:.8}
+  .btn-tiempo{background:none;border:1px solid var(--linea);color:var(--tinta-suave);
+              padding:2px 8px;font-size:11.5px;border-radius:12px;margin-top:4px;white-space:nowrap}
+  .btn-tiempo:hover{border-color:var(--azul);color:var(--azul)}
+  .maquina{display:none;background:#EAF1FB;border:1px solid #C9DAF2;border-radius:10px;
+           padding:12px 14px;margin-top:12px;font-size:13px}
+  .maquina h3{margin:0 0 6px;font-size:13.5px;color:var(--azul)}
+  .maquina table td{padding:4px 8px;border-bottom:1px solid #D6E3F5}
+  .maquina .delta-pos{color:var(--verde);font-weight:500} .maquina .delta-neg{color:var(--rojo);font-weight:500}
+  .maquina button{margin-top:8px;background:#fff;border:1px solid #C9DAF2;color:var(--azul);padding:5px 12px;font-size:12.5px}
+  .nota{font-size:12.5px;color:var(--tinta-suave);margin:0 0 12px}
+  .ok{color:var(--verde);font-size:13px;margin:9px 0 0}
+  .fallo{color:var(--rojo);font-size:13px;margin:9px 0 0}
+  canvas{max-height:220px}
+  footer{max-width:1320px;margin:0 auto;padding:0 22px 26px;font-size:12.5px;color:var(--tinta-suave)}
 </style>
 </head>
 <body>
@@ -124,17 +163,17 @@
         <label for="password">Contraseña</label>
         <input id="password" type="password" autocomplete="current-password" required>
       </div>
-      <button class="btn-principal" type="submit">Entrar</button>
-      <div id="error-login" class="fallo" style="display:none"></div>
+      <button class="btn-principal" type="submit" id="btn-entrar">Entrar</button>
+      <p id="error-login" class="fallo" style="display:none"></p>
     </form>
 
     <div class="usuarios-demo">
-      <h2>Usuarios de prueba (contraseña: demo1234)</h2>
-      <span class="chip" data-email="ana@taxisnorte.es">Ana · Taxis del Norte · usuario</span>
-      <span class="chip" data-email="luis@taxisnorte.es">Luis · Taxis del Norte · operador</span>
-      <span class="chip" data-email="marta@movilidadsur.es">Marta · Movilidad Sur · usuario</span>
-      <span class="chip" data-email="pablo@movilidadsur.es">Pablo · Movilidad Sur · operador</span>
-      <span class="chip" data-email="auditor@plataforma.es">Auditor · global</span>
+      <h2>Usuarios de prueba (contraseña: demo1234). Pulsa uno para entrar.</h2>
+      <button type="button" class="chip" data-email="ana@taxisnorte.es">Ana · Taxis del Norte · usuario</button>
+      <button type="button" class="chip" data-email="luis@taxisnorte.es">Luis · Taxis del Norte · operador</button>
+      <button type="button" class="chip" data-email="marta@movilidadsur.es">Marta · Movilidad Sur · usuario</button>
+      <button type="button" class="chip" data-email="pablo@movilidadsur.es">Pablo · Movilidad Sur · operador</button>
+      <button type="button" class="chip" data-email="auditor@plataforma.es">Auditor · toda la plataforma</button>
     </div>
   </div>
 </div>
@@ -146,6 +185,7 @@
     <span class="etiqueta" id="et-empresa"></span>
     <span class="etiqueta" id="et-rol"></span>
     <span class="etiqueta modo" id="et-modo"></span>
+    <span class="etiqueta cuota" id="et-cuota" title="Consultas disponibles en la ventana actual (cuota por empresa, E7)"></span>
     <span class="hueco"></span>
     <span class="etiqueta" id="et-email"></span>
     <button class="btn-salir" onclick="salir()">Salir</button>
@@ -153,13 +193,14 @@
 
   <main>
     <!-- Columna izquierda: chat -->
-    <section>
+    <section class="col-chat">
       <div class="tarjeta">
-        <h2>Asistente conversacional</h2>
+        <h2>Asistente conversacional
+          <button class="accion" onclick="nuevaConversacion()">Nueva conversación</button></h2>
         <div class="sugerencias" id="sugerencias"></div>
-        <div id="log"></div>
+        <div id="log" aria-live="polite"></div>
         <form id="chat">
-          <input id="mensaje" placeholder="Escribe tu pregunta..." autocomplete="off">
+          <input id="mensaje" placeholder="Escribe tu pregunta..." autocomplete="off" maxlength="2000">
           <button type="submit" id="btn-enviar">Enviar</button>
         </form>
       </div>
@@ -168,156 +209,302 @@
     <!-- Columna derecha: datos -->
     <section>
       <div class="tarjeta">
-        <h2>Métricas de mi empresa</h2>
+        <h2 id="titulo-kpis">Métricas de mi empresa</h2>
         <div class="kpis" id="kpis"></div>
+        <p class="pie-kpi" id="pie-kpis"></p>
+        <div class="maquina" id="maquina" aria-live="polite"></div>
+      </div>
+
+      <div class="tarjeta" id="panel-globales" style="display:none">
+        <h2>Comparativa entre empresas <span class="contador">solo auditor</span></h2>
+        <div class="tabla-scroll" id="tabla-globales"></div>
+      </div>
+
+      <div class="dos-graficas">
+        <div class="tarjeta">
+          <h2>Viajes por distrito</h2>
+          <canvas id="grafica-borough" aria-label="Viajes por distrito"></canvas>
+        </div>
+        <div class="tarjeta">
+          <h2>Métodos de pago</h2>
+          <canvas id="grafica-pagos" aria-label="Viajes por método de pago"></canvas>
+        </div>
       </div>
 
       <div class="tarjeta">
-        <h2>Viajes por distrito</h2>
-        <canvas id="grafica-borough"></canvas>
-      </div>
-
-      <div class="tarjeta">
-        <h2>Demanda por hora</h2>
-        <canvas id="grafica-horas"></canvas>
+        <h2>Zonas de recogida con más viajes</h2>
+        <div class="tabla-scroll" id="tabla-zonas"></div>
       </div>
 
       <div class="tarjeta" id="panel-correccion" style="display:none">
         <h2>Registrar corrección de un proveedor</h2>
-        <p class="nota">El valor original se conserva; solo se recalculan las métricas
-           del día y distrito afectados.</p>
+        <p class="nota">El valor anterior se conserva en el historial; solo se recalculan las
+           métricas del día y distrito del viaje.</p>
         <div class="rejilla-form">
           <div>
-            <label class="et" for="c-viaje">Viaje</label>
+            <label for="c-viaje">Viaje</label>
             <select id="c-viaje"></select>
           </div>
           <div>
-            <label class="et" for="c-campo">Campo</label>
+            <label for="c-campo">Campo</label>
             <select id="c-campo">
-              <option value="importe_total">Importe total</option>
-              <option value="distancia">Distancia</option>
+              <option value="importe_total">Importe total ($)</option>
+              <option value="propina">Propina ($)</option>
+              <option value="distancia">Distancia (millas)</option>
               <option value="pasajeros">Pasajeros</option>
-              <option value="propina">Propina</option>
             </select>
           </div>
+        </div>
+        <p class="actual" id="c-actual"></p>
+        <div class="rejilla-form">
           <div>
-            <label class="et" for="c-valor">Valor corregido</label>
-            <input id="c-valor" type="number" step="0.01">
+            <label for="c-valor">Valor corregido</label>
+            <input id="c-valor" type="text" inputmode="decimal" autocomplete="off" placeholder="p. ej. 23,50">
           </div>
           <div>
-            <label class="et" for="c-motivo">Motivo</label>
-            <input id="c-motivo" placeholder="Tarifa mal registrada">
+            <label for="c-motivo">Motivo</label>
+            <input id="c-motivo" placeholder="Tarifa mal registrada" maxlength="500">
           </div>
         </div>
-        <button class="btn-corregir" onclick="enviarCorreccion()">Aplicar corrección</button>
-        <button class="btn-cancelar" onclick="enviarCancelacion()">Cancelar este viaje</button>
-        <div id="resultado-correccion"></div>
+        <div class="botones">
+          <button class="btn-corregir" id="btn-corregir" onclick="enviarCorreccion()">Aplicar corrección</button>
+          <button class="btn-cancelar" id="btn-cancelar" onclick="enviarCancelacion()">Cancelar viaje</button>
+        </div>
+        <div id="resultado-correccion" role="status"></div>
       </div>
 
       <div class="tarjeta">
-        <h2>Historial de correcciones <span class="contador" id="cont-corr"></span></h2>
-        <div id="tabla-correcciones"></div>
+        <h2>Historial de correcciones <span class="contador" id="cont-corr"></span>
+          <span class="sello" id="sello-cadena" hidden></span></h2>
+        <div class="tabla-scroll" id="tabla-correcciones"></div>
       </div>
     </section>
   </main>
+  <footer>
+    Datos: NYC TLC 2020 Yellow Taxi Trip Data (importes en dólares) ·
+    <a id="enlace-calidad" target="_blank" rel="noopener">métricas de calidad</a> ·
+    <a id="enlace-docs" target="_blank" rel="noopener">documentación de la API</a>
+  </footer>
 </div>
 
 <script>
-const API = (location.hostname === "localhost" || location.hostname === "127.0.0.1")
-  ? "http://localhost:8000" : `http://${location.hostname}:8000`;
+"use strict";
+/* ================================================================
+   Conexion con la API
+   Detras de nginx (docker compose) la API esta en /api, mismo origen.
+   Si el fichero se abre suelto se prueba el puerto 8000 directamente.
+   ================================================================ */
+let API = "/api";
+async function detectarApi() {
+  const candidatos = location.protocol === "file:"
+    ? ["http://localhost:8000"]
+    : ["/api", `${location.protocol}//${location.hostname}:8000`];
+  for (const c of candidatos) {
+    try {
+      const r = await fetch(c + "/salud", {cache: "no-store"});
+      if (r.ok || r.status === 503) { API = c; return true; }
+    } catch (_) { /* siguiente */ }
+  }
+  return false;
+}
 
-let token = null, perfil = null, graficaBorough = null, graficaHoras = null;
-const sessionId = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
+let token = null, perfil = null, ultimoPanel = null;
+const graficas = {};
+let sessionId = nuevoId();
 
-/* ---------------- utilidades ---------------- */
+function nuevoId() {
+  return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random();
+}
+
+/* Almacen de sesion: puede no existir (modo privado). Nunca debe romper. */
+const almacen = {
+  get(k) { try { return sessionStorage.getItem(k); } catch (_) { return null; } },
+  set(k, v) { try { sessionStorage.setItem(k, v); } catch (_) {} },
+  del(k) { try { sessionStorage.removeItem(k); } catch (_) {} },
+};
+
+class ErrorApi extends Error {
+  constructor(mensaje, estado) { super(mensaje); this.estado = estado; }
+}
+
 async function api(ruta, opciones = {}) {
   const cabeceras = Object.assign({"Content-Type": "application/json"}, opciones.headers || {});
   if (token) cabeceras["Authorization"] = "Bearer " + token;
-  const r = await fetch(API + ruta, Object.assign({}, opciones, {headers: cabeceras}));
+  let r;
+  try {
+    r = await fetch(API + ruta, Object.assign({}, opciones, {headers: cabeceras}));
+  } catch (_) {
+    throw new ErrorApi("No hay conexión con la API. ¿Está arrancada? (docker compose ps)", 0);
+  }
+  const restante = r.headers.get("X-Cuota-Restante");
+  if (restante !== null) pintarCuota(+restante, +r.headers.get("X-Cuota-Limite"));
   const cuerpo = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(cuerpo.detail || `Error ${r.status}`);
+  if (r.status === 401 && token) {
+    salir("Tu sesión ha caducado o la API se ha reiniciado. Vuelve a entrar.");
+    throw new ErrorApi("Sesión caducada", 401);
+  }
+  if (!r.ok) {
+    let detalle = cuerpo.detail;
+    if (Array.isArray(detalle)) detalle = detalle.map(d => d.msg).join("; ");
+    throw new ErrorApi(detalle || `Error ${r.status}`, r.status);
+  }
   return cuerpo;
 }
-const eur = n => (n ?? 0).toLocaleString("es-ES", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+/* ---------------- formato ---------------- */
+// useGrouping "always": en es-ES los miles de 4 cifras no se agrupan por
+// defecto (7601,82) y el chat si los agrupa (7.601,82). Mismo formato en todo.
+const fmt = (n, dec = 2) => (n ?? 0).toLocaleString("es-ES",
+  {minimumFractionDigits: dec, maximumFractionDigits: dec, useGrouping: "always"});
+const usd = n => fmt(n) + " $";
+const valorCampo = (campo, v) => v == null ? "—" :
+  campo === "pasajeros" ? fmt(v, 0) : campo === "distancia" ? fmt(v) + " millas" : usd(v);
+const NOMBRE_CAMPO = {importe_total: "importe total", propina: "propina",
+                      distancia: "distancia", pasajeros: "pasajeros"};
+const zona = z => (!z || ["N/A", "NV", "Unknown"].includes(z)) ? "zona no registrada" : z;
+
+function esc(t) {
+  return String(t ?? "").replace(/[&<>"']/g,
+    c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+}
+
+/* Markdown minimo y seguro para las respuestas del asistente:
+   se escapa TODO y despues se permiten **negrita**, listas y parrafos. */
+function markdown(texto) {
+  const lineas = esc(texto).split("\n");
+  let html = "", lista = null;
+  const cerrar = () => { if (lista) { html += `</${lista}>`; lista = null; } };
+  for (const l of lineas) {
+    const vineta = l.match(/^\s*[-•*]\s+(.*)$/), numero = l.match(/^\s*\d+[.)]\s+(.*)$/);
+    if (vineta || numero) {
+      const tipo = vineta ? "ul" : "ol";
+      if (lista !== tipo) { cerrar(); html += `<${tipo}>`; lista = tipo; }
+      html += `<li>${(vineta || numero)[1]}</li>`;
+    } else {
+      cerrar();
+      if (l.trim()) html += `<p>${l}</p>`;
+    }
+  }
+  cerrar();
+  return html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+}
 
 /* ---------------- login ---------------- */
-document.querySelectorAll(".chip").forEach(chip => {
-  chip.addEventListener("click", () => {
-    document.getElementById("email").value = chip.dataset.email;
-    document.getElementById("password").value = "demo1234";
-  });
-});
-
-document.getElementById("form-login").addEventListener("submit", async e => {
-  e.preventDefault();
+async function entrar(email, password) {
   const err = document.getElementById("error-login");
+  const btn = document.getElementById("btn-entrar");
   err.style.display = "none";
+  btn.disabled = true;
   try {
-    const datos = await api("/auth/login", {
-      method: "POST",
-      body: JSON.stringify({
-        email: document.getElementById("email").value,
-        password: document.getElementById("password").value,
-      }),
-    });
+    const datos = await api("/auth/login", {method: "POST", body: JSON.stringify({email, password})});
     token = datos.token;
+    almacen.set("pids_token", token);
     await iniciarSesion();
   } catch (ex) {
     err.textContent = ex.message;
     err.style.display = "block";
+  } finally {
+    btn.disabled = false;
   }
+}
+
+document.querySelectorAll(".chip").forEach(chip => {
+  chip.addEventListener("click", () => {
+    document.getElementById("email").value = chip.dataset.email;
+    document.getElementById("password").value = "demo1234";
+    entrar(chip.dataset.email, "demo1234");
+  });
 });
 
-function salir() {
-  token = null; perfil = null;
+document.getElementById("form-login").addEventListener("submit", e => {
+  e.preventDefault();
+  entrar(document.getElementById("email").value, document.getElementById("password").value);
+});
+
+function salir(motivo) {
+  if (token && sessionId) fetch(API + "/chat/" + encodeURIComponent(sessionId),
+    {method: "DELETE", headers: {Authorization: "Bearer " + token}}).catch(() => {});
+  token = null; perfil = null; ultimoPanel = null;
+  almacen.del("pids_token");
+  sessionId = nuevoId();
   document.getElementById("app").style.display = "none";
   document.getElementById("login").style.display = "flex";
   document.getElementById("log").innerHTML = "";
+  const err = document.getElementById("error-login");
+  if (typeof motivo === "string") { err.textContent = motivo; err.style.display = "block"; }
+  else err.style.display = "none";
 }
 
 async function iniciarSesion() {
   perfil = await api("/auth/yo");
-  const salud = await fetch(API + "/salud").then(r => r.json()).catch(() => ({}));
 
-  document.getElementById("et-empresa").textContent = perfil.empresa;
-  document.getElementById("et-rol").textContent = "rol: " + perfil.rol;
+  document.getElementById("et-empresa").textContent = perfil.empresa_nombre;
+  document.getElementById("et-rol").textContent = "rol: " + perfil.rol +
+    (perfil.rol === "auditor" ? " (solo lectura)" : "");
   document.getElementById("et-email").textContent = perfil.email;
-  document.getElementById("et-modo").textContent = "motor: " + (salud.modo_chatbot || "?");
+  const modo = document.getElementById("et-modo");
+  if (perfil.modo_chatbot === "ollama") {
+    const afinado = perfil.nlu_afinado;
+    modo.textContent = `chatbot: Ollama · ${perfil.modelo_nlu}${afinado ? "" : " (base)"}`;
+    modo.title = afinado ? "Modelo local afinado con LoRA para esta plataforma"
+                         : "Modelo base sin afinar: entrena el tuyo con llm/entrenar_colab.ipynb";
+  } else {
+    modo.textContent = "chatbot: " + (perfil.modo_chatbot === "llm" ? "LLM" : "reglas");
+    modo.title = perfil.modo_chatbot === "reglas" ? "NLU por reglas (sin modelo de lenguaje)" : "";
+  }
+  document.getElementById("titulo-kpis").textContent = perfil.puede_ver_global
+    ? "Métricas de toda la plataforma" : "Métricas de mi empresa";
+  pintarCuota(perfil.cuota_consultas_min, perfil.cuota_consultas_min);
 
   document.getElementById("login").style.display = "none";
   document.getElementById("app").style.display = "block";
-  document.getElementById("panel-correccion").style.display =
-    perfil.puede_corregir ? "block" : "none";
+  document.getElementById("panel-correccion").style.display = perfil.puede_corregir ? "block" : "none";
+  document.getElementById("panel-globales").style.display = perfil.puede_ver_global ? "block" : "none";
 
-  pintarSugerencias();
+  document.getElementById("log").innerHTML = "";
   añadirMensaje(
-    `Hola. Estás conectado como ${perfil.email} (${perfil.rol}) de ${perfil.empresa}. ` +
-    `Solo puedo consultar los datos de tu empresa.`, "bot", "Asistente");
-  await refrescarTodo();
+    `Hola, ${perfil.email.split("@")[0]}. Estás en **${perfil.empresa_nombre}** con rol ` +
+    `**${perfil.rol}**. ` + (perfil.puede_ver_global
+      ? "Puedes consultar todas las empresas, en modo solo lectura."
+      : "Solo puedo consultar los datos de tu empresa.") +
+    (perfil.puede_corregir ? " También puedes corregir o cancelar viajes, desde el formulario o escribiéndomelo." : "") +
+    "\nEscribe «ayuda» para ver ejemplos.", "bot", "Asistente");
+  await refrescarPanel();
+  pintarSugerencias();
+  document.getElementById("mensaje").focus();
+}
+
+function pintarCuota(restante, limite) {
+  const et = document.getElementById("et-cuota");
+  if (!limite) return;
+  et.textContent = `cuota: ${restante}/${limite}`;
+  et.classList.toggle("baja", restante <= Math.max(3, limite * 0.2));
 }
 
 function pintarSugerencias() {
-  const base = [
-    "¿Cuántos viajes tenemos?",
-    "Tarifa media en Manhattan",
-    "Zonas con más viajes",
-    "¿A qué hora hay más demanda?",
-    "¿Por qué ha cambiado esa cifra?",
-  ];
-  base.push("Dame las métricas globales de la plataforma");
+  const viaje = (ultimoPanel?.viajes || []).find(v => !v.cancelado);
+  const s = ["¿Cuántos viajes tenemos?", "Tarifa media en Manhattan",
+             "¿Cuánto facturamos el 1 de enero?", "Zonas con más viajes", "¿Y en Brooklyn?",
+             "¿Por qué ha cambiado esa cifra?"];
+  if (perfil.puede_corregir && viaje) {
+    s.push(`Detalle del viaje ${viaje.id}`);
+    s.push(`Corrige el viaje ${viaje.id}, importe ${fmt(Math.round((viaje.importe_total + 5) * 100) / 100)}`);
+  }
+  const otra = {taxis_norte: "Dame los datos de Movilidad Sur", movilidad_sur: "¿Cuánto factura Taxis del Norte?"};
+  s.push(perfil.puede_ver_global ? "Compara las empresas de la plataforma"
+                                 : (otra[perfil.empresa] || "Dame los datos de otra empresa"));
   const cont = document.getElementById("sugerencias");
   cont.innerHTML = "";
-  base.forEach(t => {
-    const s = document.createElement("span");
-    s.className = "sug"; s.textContent = t;
-    s.onclick = () => { document.getElementById("mensaje").value = t;
-                        document.getElementById("chat").requestSubmit(); };
-    cont.appendChild(s);
+  s.forEach(t => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "sug"; b.textContent = t;
+    b.onclick = () => enviarMensaje(t);
+    cont.appendChild(b);
   });
 }
 
 /* ---------------- chat ---------------- */
-function añadirMensaje(texto, tipo, quien, extra) {
+function añadirMensaje(texto, tipo, quien, extra = {}) {
   const log = document.getElementById("log");
   const div = document.createElement("div");
   div.className = "msj " + tipo;
@@ -325,108 +512,173 @@ function añadirMensaje(texto, tipo, quien, extra) {
     const s = document.createElement("span");
     s.className = "quien"; s.textContent = quien; div.appendChild(s);
   }
-  div.appendChild(document.createTextNode(texto));
-  if (extra && extra.aviso) {
+  const cuerpo = document.createElement("div");
+  if (tipo === "bot") cuerpo.innerHTML = markdown(texto);
+  else cuerpo.textContent = texto;
+  div.appendChild(cuerpo);
+  if (extra.aviso && !texto.includes(extra.aviso)) {
     const a = document.createElement("span");
     a.className = "aviso"; a.textContent = "⚠ " + extra.aviso; div.appendChild(a);
   }
-  if (extra && extra.tools && extra.tools.length) {
+  if (extra.confirmar) {
+    const c = document.createElement("div");
+    c.className = "confirmar";
+    c.innerHTML = `<button type="button" class="si">Sí, confirmar</button><button type="button" class="no">No</button>`;
+    c.querySelector(".si").onclick = () => { c.remove(); enviarMensaje("sí"); };
+    c.querySelector(".no").onclick = () => { c.remove(); enviarMensaje("no"); };
+    div.appendChild(c);
+  }
+  if (extra.tools && extra.tools.length) {
     const t = document.createElement("span");
     t.className = "tools";
-    t.textContent = "herramientas: " + extra.tools.join(", ");
+    t.textContent = "herramientas: " + extra.tools.join(", ") + (extra.modo ? ` · NLU ${extra.modo}` : "");
     div.appendChild(t);
   }
   log.appendChild(div);
   log.scrollTop = log.scrollHeight;
+  return div;
 }
 
-document.getElementById("chat").addEventListener("submit", async e => {
-  e.preventDefault();
-  const campo = document.getElementById("mensaje");
-  const mensaje = campo.value.trim();
-  if (!mensaje) return;
+async function enviarMensaje(mensaje) {
+  mensaje = (mensaje || "").trim();
+  if (!mensaje || !perfil) return;
+  document.querySelectorAll(".confirmar").forEach(c => c.remove());
   añadirMensaje(mensaje, "yo", "Tú");
-  campo.value = "";
   const btn = document.getElementById("btn-enviar");
-  btn.disabled = true; btn.textContent = "...";
+  btn.disabled = true;
+  const pensando = añadirMensaje("Pensando…", "bot escribiendo");
 
   try {
-    const r = await api("/chat", {
-      method: "POST",
-      body: JSON.stringify({mensaje, session_id: sessionId}),
-    });
+    const r = await api("/chat", {method: "POST", body: JSON.stringify({mensaje, session_id: sessionId})});
+    pensando.remove();
     const usadas = (r.herramientas_usadas || []).map(h => h.herramienta);
     let aviso = null;
     (r.herramientas_usadas || []).forEach(h => {
       if (h.resultado && h.resultado.aviso_correcciones) aviso = h.resultado.aviso_correcciones;
     });
-    let quien = "Asistente · " + r.empresa;
-    if (r.degradado_desde) {
-      quien += " · respaldo por reglas";
-      document.getElementById("et-modo").textContent = "motor: reglas (respaldo)";
-    } else if (r.modelo) {
-      quien += " · " + r.modelo;
-    }
-    añadirMensaje(r.respuesta, "bot", quien, {tools: usadas, aviso});
-    if (usadas.some(u => ["registrar_correccion", "cancelar_viaje"].includes(u))) {
-      await refrescarTodo();
-    }
+    if (r.cuota) pintarCuota(r.cuota.restantes, r.cuota.limite);
+    const modo = r.degradado_desde_llm
+      ? `reglas (el modelo no respondió: ${r.degradado_desde_llm})`
+      : (r.nlu && r.nlu !== "reglas" ? r.nlu : null);
+    añadirMensaje(r.respuesta, "bot", "Asistente", {tools: usadas, aviso, modo,
+                                                     confirmar: r.pendiente_confirmacion});
+    const escribio = (r.herramientas_usadas || []).some(h =>
+      ["registrar_correccion", "cancelar_viaje"].includes(h.herramienta) && !(h.resultado || {}).error);
+    if (escribio) await refrescarPanel(true);
   } catch (ex) {
-    añadirMensaje(ex.message, "err");
+    pensando.remove();
+    if (ex.estado !== 401) añadirMensaje(ex.message, "err");
   } finally {
-    btn.disabled = false; btn.textContent = "Enviar";
+    btn.disabled = false;
   }
+}
+
+document.getElementById("chat").addEventListener("submit", e => {
+  e.preventDefault();
+  const campo = document.getElementById("mensaje");
+  const m = campo.value;
+  campo.value = "";
+  enviarMensaje(m);
 });
 
-/* ---------------- panel de datos ---------------- */
-async function refrescarTodo() {
-  await Promise.all([refrescarKpis(), refrescarGraficas(),
-                     refrescarCorrecciones(), refrescarViajes()]);
+async function nuevaConversacion() {
+  try { await api("/chat/" + encodeURIComponent(sessionId), {method: "DELETE"}); } catch (_) {}
+  sessionId = nuevoId();
+  document.getElementById("log").innerHTML = "";
+  añadirMensaje("Conversación nueva. ¿Qué quieres consultar?", "bot", "Asistente");
 }
 
-async function refrescarKpis() {
-  const d = await api("/datos/resumen");
+/* ---------------- panel de datos (una sola peticion) ---------------- */
+async function refrescarPanel(resaltar = false) {
+  let d;
+  try {
+    d = await api("/datos/panel");
+  } catch (ex) {
+    if (ex.estado !== 401) añadirMensaje("No se pudo actualizar el panel: " + ex.message, "err");
+    return;
+  }
+  const anterior = ultimoPanel;
+  ultimoPanel = d;
+  pintarKpis(d.resumen, resaltar ? anterior?.resumen : null);
+  pintarGraficas(d);
+  pintarZonas(d.zonas);
+  pintarCorrecciones(d.correcciones);
+  pintarCadena(d.cadena);
+  if (d.globales) pintarGlobales(d.globales);
+  if (d.viajes) pintarViajes(d.viajes);
+}
+
+function pintarKpis(r, antes) {
+  const kpis = [
+    {clave: "num_viajes", val: fmt(r.num_viajes, 0), et: "viajes vigentes"},
+    {clave: "importe_medio", val: usd(r.importe_medio), et: "importe medio"},
+    {clave: "importe_total", val: usd(r.importe_total), et: "facturación total"},
+    {clave: "correcciones", val: `${r.viajes_corregidos} / ${r.viajes_cancelados}`,
+     et: "corregidos / cancelados", marcado: r.viajes_corregidos || r.viajes_cancelados},
+  ];
   const cont = document.getElementById("kpis");
-  cont.innerHTML = `
-    <div class="kpi"><div class="val">${d.num_viajes}</div><div class="et">viajes vigentes</div></div>
-    <div class="kpi"><div class="val">${eur(d.importe_medio)} €</div><div class="et">importe medio</div></div>
-    <div class="kpi"><div class="val">${eur(d.importe_total)} €</div><div class="et">facturación total</div></div>
-    <div class="kpi ${d.viajes_corregidos || d.viajes_cancelados ? "marcado" : ""}">
-      <div class="val">${d.viajes_corregidos} / ${d.viajes_cancelados}</div>
-      <div class="et">corregidos / cancelados</div></div>`;
+  cont.innerHTML = kpis.map(k => {
+    const cambio = antes && (k.clave === "correcciones"
+      ? (antes.viajes_corregidos !== r.viajes_corregidos || antes.viajes_cancelados !== r.viajes_cancelados)
+      : antes[k.clave] !== r[k.clave]);
+    return `<div class="kpi ${k.marcado ? "marcado" : ""} ${cambio ? "cambio" : ""}">
+      <div class="val">${esc(k.val)}</div><div class="et">${esc(k.et)}</div></div>`;
+  }).join("");
+  setTimeout(() => cont.querySelectorAll(".cambio").forEach(e => e.classList.remove("cambio")), 1400);
+  document.getElementById("pie-kpis").textContent =
+    (r.aviso_correcciones ? "⚠ " + r.aviso_correcciones + " " : "") +
+    (r.actualizado_en ? "Última actualización del cubo: " +
+      new Date(r.actualizado_en).toLocaleString("es-ES") : "");
 }
 
-async function refrescarGraficas() {
-  const [b, h] = await Promise.all([api("/datos/boroughs"), api("/datos/horas")]);
-
-  if (graficaBorough) graficaBorough.destroy();
-  graficaBorough = new Chart(document.getElementById("grafica-borough"), {
-    type: "bar",
-    data: {
-      labels: b.boroughs.map(x => x.borough),
-      datasets: [{label: "Viajes", data: b.boroughs.map(x => x.num_viajes),
-                  backgroundColor: "#F5C518", borderRadius: 4}],
-    },
-    options: {responsive: true, plugins: {legend: {display: false}},
-              scales: {y: {beginAtZero: true}}},
+function pintarGraficas(d) {
+  if (typeof Chart === "undefined") return;   // sin Chart.js el resto del panel sigue funcionando
+  const base = {responsive: true, maintainAspectRatio: true, animation: {duration: 300}};
+  const datosBorough = {
+    labels: d.boroughs.map(x => x.borough),
+    datasets: [{label: "Viajes", data: d.boroughs.map(x => x.num_viajes),
+                backgroundColor: "#F5C518", borderRadius: 4}],
+  };
+  const datosPagos = {
+    labels: d.pagos.map(x => x.etiqueta),
+    datasets: [{label: "Viajes", data: d.pagos.map(x => x.num_viajes),
+                backgroundColor: ["#1C2430", "#F5C518", "#8A94A3", "#B3261E", "#1A5FA8", "#1D7A54"],
+                borderColor: "#fff", borderWidth: 2}],
+  };
+  if (graficas.borough) { graficas.borough.data = datosBorough; graficas.borough.update(); }
+  else graficas.borough = new Chart(document.getElementById("grafica-borough"), {
+    type: "bar", data: datosBorough,
+    options: Object.assign({}, base, {plugins: {legend: {display: false}},
+      scales: {y: {beginAtZero: true, ticks: {precision: 0}}}}),
   });
-
-  if (graficaHoras) graficaHoras.destroy();
-  graficaHoras = new Chart(document.getElementById("grafica-horas"), {
-    type: "line",
-    data: {
-      labels: h.horas.map(x => String(x.hora).padStart(2, "0") + "h"),
-      datasets: [{label: "Viajes", data: h.horas.map(x => x.num_viajes),
-                  borderColor: "#1C2430", backgroundColor: "rgba(28,36,48,.08)",
-                  fill: true, tension: .3, pointRadius: 2}],
-    },
-    options: {responsive: true, plugins: {legend: {display: false}},
-              scales: {y: {beginAtZero: true}}},
+  if (graficas.pagos) { graficas.pagos.data = datosPagos; graficas.pagos.update(); }
+  else graficas.pagos = new Chart(document.getElementById("grafica-pagos"), {
+    type: "doughnut", data: datosPagos,
+    options: Object.assign({}, base, {cutout: "58%",
+      plugins: {legend: {position: "bottom", labels: {boxWidth: 12, font: {size: 11.5}}}}}),
   });
 }
 
-async function refrescarCorrecciones() {
-  const d = await api("/correcciones?limite=15");
+function pintarZonas(zonas) {
+  const cont = document.getElementById("tabla-zonas");
+  if (!zonas.length) { cont.innerHTML = `<p class="vacio">Sin viajes.</p>`; return; }
+  cont.innerHTML = `<table><thead><tr><th>Zona</th><th>Distrito</th><th class="num">Viajes</th>
+    <th class="num">Importe medio</th></tr></thead><tbody>${zonas.map(z =>
+    `<tr><td>${esc(zona(z.zona))}${z.corregidos ? ` <span class="tag corr">${z.corregidos} corr.</span>` : ""}</td>
+     <td>${esc(z.borough)}</td><td class="num">${z.num_viajes}</td><td class="num">${usd(z.importe_medio)}</td></tr>`
+  ).join("")}</tbody></table>`;
+}
+
+function pintarGlobales(g) {
+  document.getElementById("tabla-globales").innerHTML =
+    `<table><thead><tr><th>Empresa</th><th class="num">Viajes</th><th class="num">Facturación</th>
+     <th class="num">Media</th><th class="num">Corr. / canc.</th></tr></thead><tbody>${g.empresas.map(e =>
+    `<tr><td>${esc(e.nombre)}</td><td class="num">${e.num_viajes}</td><td class="num">${usd(e.importe_total)}</td>
+     <td class="num">${usd(e.importe_medio)}</td><td class="num">${e.corregidos} / ${e.cancelados}</td></tr>`
+  ).join("")}</tbody></table>`;
+}
+
+function pintarCorrecciones(d) {
   document.getElementById("cont-corr").textContent = d.total ? `(${d.total})` : "";
   const cont = document.getElementById("tabla-correcciones");
   if (!d.correcciones.length) {
@@ -435,55 +687,142 @@ async function refrescarCorrecciones() {
     return;
   }
   const filas = d.correcciones.map(c => {
-    const cuando = c.aplicada_en.slice(0, 19).replace("T", " ");
+    const cuando = new Date(c.aplicada_en).toLocaleString("es-ES");
     const cambio = c.tipo === "cancelacion"
-      ? `<span class="tachado">${eur(c.valor_original)} €</span> → excluido`
-      : `<span class="tachado">${eur(c.valor_original)}</span> → <strong>${eur(c.valor_nuevo)}</strong>`;
+      ? `<span class="tachado">${usd(c.valor_original)}</span> → excluido`
+      : `<span class="tachado">${esc(valorCampo(c.campo, c.valor_original))}</span> → <strong>${esc(valorCampo(c.campo, c.valor_nuevo))}</strong>`;
     const tag = c.tipo === "cancelacion"
       ? `<span class="tag canc">cancelación</span>`
-      : `<span class="tag corr">${c.campo}</span>`;
+      : `<span class="tag corr">${esc(NOMBRE_CAMPO[c.campo] || c.campo)}</span>`;
     return `<tr><td>#${c.viaje_id}</td><td>${tag}</td><td>${cambio}</td>
-            <td>${c.motivo || ""}<br><span style="color:var(--tinta-sueve);font-size:11.5px">
-            ${cuando} · ${c.aplicada_por}</span></td></tr>`;
+            <td>${esc(c.motivo)}<br><span class="sutil">${esc(cuando)} · ${esc(c.aplicada_por)}</span><br>
+            <button type="button" class="btn-tiempo" onclick="verAntesDe(${c.id})"
+              title="Reconstruye las métricas tal y como estaban justo antes de este cambio">⏱ ver cifras de antes</button></td></tr>`;
   }).join("");
+  const mas = d.total > d.correcciones.length
+    ? `<p class="nota" style="margin-top:8px">Se muestran las ${d.correcciones.length} más recientes de ${d.total}.</p>` : "";
   cont.innerHTML = `<table><thead><tr><th>Viaje</th><th>Tipo</th><th>Cambio</th>
-                    <th>Motivo y trazabilidad</th></tr></thead><tbody>${filas}</tbody></table>`;
+                    <th>Motivo y trazabilidad</th></tr></thead><tbody>${filas}</tbody></table>${mas}`;
 }
 
-async function refrescarViajes() {
-  if (!perfil.puede_corregir) return;
-  const d = await api("/datos/viajes?limite=25");
+/* ---------------- cadena de hashes ---------------- */
+function pintarCadena(c) {
+  const el = document.getElementById("sello-cadena");
+  if (!c) { el.hidden = true; return; }
+  el.hidden = false;
+  if (c.integra) {
+    const total = c.cadenas.reduce((n, x) => n + (x.eslabones || 0), 0);
+    const cabeza = c.cadenas.length === 1 && c.cadenas[0].cabeza ? c.cadenas[0].cabeza.slice(0, 10) : null;
+    el.className = "sello ok";
+    el.innerHTML = `🔒 Cadena íntegra · ${total} ${total === 1 ? "eslabón" : "eslabones"}` +
+                   (cabeza ? ` · <code>${cabeza}…</code>` : "");
+    el.title = "Cada corrección está encadenada con SHA-256 a la anterior de su empresa. " +
+               "La API recalcula la cadena en cada refresco: cualquier modificación o borrado, " +
+               "incluso por un administrador de la base de datos, se detectaría aquí.";
+  } else {
+    const rota = c.cadenas.find(x => !x.integra);
+    el.className = "sello roto";
+    el.textContent = `⚠ Cadena rota (${rota.empresa}, eslabón ${rota.eslabon})`;
+    el.title = rota.problema;
+  }
+}
+
+/* ---------------- viaje en el tiempo ---------------- */
+async function verAntesDe(correccionId) {
+  const caja = document.getElementById("maquina");
+  caja.style.display = "block";
+  caja.innerHTML = "Reconstruyendo el pasado desde el log de eventos…";
+  let d;
+  try {
+    d = await api("/datos/en?antes_de_correccion=" + correccionId);
+  } catch (ex) {
+    caja.innerHTML = `<p class="fallo">${esc(ex.message)}</p>`;
+    return;
+  }
+  const c = (ultimoPanel?.correcciones?.correcciones || []).find(x => x.id === correccionId);
+  const cuando = new Date(d.instante).toLocaleString("es-ES", {dateStyle: "short", timeStyle: "medium"});
+  const fila = (etiqueta, clave, formato) => {
+    const a = d.en_ese_instante[clave], b = d.ahora[clave], dif = d.diferencia[clave];
+    const cls = dif > 0 ? "delta-pos" : dif < 0 ? "delta-neg" : "";
+    const signo = dif > 0 ? "+" : "";
+    return `<tr><td>${etiqueta}</td><td class="num">${formato(a)}</td><td class="num">${formato(b)}</td>
+            <td class="num ${cls}">${dif ? signo + formato(dif) : "="}</td></tr>`;
+  };
+  const entero = v => fmt(v, 0);
+  caja.innerHTML = `<h3>⏱ Las cifras justo antes de ${c ? `la ${c.tipo === "cancelacion" ? "cancelación" : "corrección"} del viaje #${c.viaje_id}` : "esa corrección"}</h3>
+    <div class="sutil">Reconstruidas a ${esc(cuando)} aplicando solo los eventos anteriores: no hay copias ni snapshots.
+    Después hubo ${d.correcciones_posteriores} cambio(s).</div>
+    <table><thead><tr><th></th><th class="num">Entonces</th><th class="num">Ahora</th><th class="num">Diferencia</th></tr></thead><tbody>
+    ${fila("Viajes vigentes", "num_viajes", entero)}
+    ${fila("Facturación", "importe_total", usd)}
+    ${fila("Importe medio", "importe_medio", usd)}
+    ${fila("Corregidos", "viajes_corregidos", entero)}
+    ${fila("Cancelados", "viajes_cancelados", entero)}
+    </tbody></table>
+    <button type="button" onclick="document.getElementById('maquina').style.display='none'">Volver al presente</button>`;
+  caja.scrollIntoView({behavior: "smooth", block: "nearest"});
+}
+
+/* ---------------- correcciones (operador) ---------------- */
+function pintarViajes(viajes) {
   const sel = document.getElementById("c-viaje");
-  sel.innerHTML = d.viajes.map(v =>
-    `<option value="${v.id}">#${v.id} · ${v.zona_origen || "?"} · ${eur(v.importe_total)} €${
+  const previo = sel.value;
+  sel.innerHTML = viajes.map(v =>
+    `<option value="${v.id}" ${v.cancelado ? "disabled" : ""}>#${v.id} · ${esc(zona(v.zona_origen))} · ${usd(v.importe_total)}${
       v.cancelado ? " (cancelado)" : v.corregido ? " (corregido)" : ""}</option>`).join("");
+  if (previo && viajes.some(v => String(v.id) === previo && !v.cancelado)) sel.value = previo;
+  else { const primero = viajes.find(v => !v.cancelado); if (primero) sel.value = primero.id; }
+  mostrarValorActual();
 }
 
-/* ---------------- correcciones ---------------- */
+function viajeSeleccionado() {
+  const id = +document.getElementById("c-viaje").value;
+  return (ultimoPanel?.viajes || []).find(v => v.id === id);
+}
+
+function mostrarValorActual() {
+  const v = viajeSeleccionado(), campo = document.getElementById("c-campo").value;
+  const p = document.getElementById("c-actual"), input = document.getElementById("c-valor");
+  if (!v) { p.textContent = ""; return; }
+  const actual = v[campo];
+  p.innerHTML = `Valor vigente de ${esc(NOMBRE_CAMPO[campo])}: <b>${esc(valorCampo(campo, actual))}</b>` +
+    (campo === "importe_total" && v.corregido ? ` · original al ingerir: ${usd(v.importe_original)}` : "");
+  input.placeholder = actual == null ? "" : "actual: " + (campo === "pasajeros" ? fmt(actual, 0) : fmt(actual));
+}
+document.getElementById("c-viaje").addEventListener("change", mostrarValorActual);
+document.getElementById("c-campo").addEventListener("change", mostrarValorActual);
+
+function bloquearFormulario(si) {
+  document.getElementById("btn-corregir").disabled = si;
+  document.getElementById("btn-cancelar").disabled = si;
+}
+
 async function enviarCorreccion() {
   const salida = document.getElementById("resultado-correccion");
   salida.innerHTML = "";
-  const valor = parseFloat(document.getElementById("c-valor").value);
+  // Admite coma o punto decimal ("23,50" o "23.50"), como lo teclearia cualquiera
+  const bruto = String(document.getElementById("c-valor").value).trim().replace(/\s|\$/g, "");
+  const valor = /^-?\d+([.,]\d+)?$/.test(bruto) ? parseFloat(bruto.replace(",", ".")) : NaN;
   const motivo = document.getElementById("c-motivo").value.trim();
-  if (isNaN(valor)) { salida.innerHTML = `<p class="fallo">Indica el valor corregido.</p>`; return; }
+  if (isNaN(valor)) { salida.innerHTML = `<p class="fallo">Indica el valor corregido como número (por ejemplo 23,50).</p>`; return; }
   if (motivo.length < 3) { salida.innerHTML = `<p class="fallo">Indica el motivo de la corrección.</p>`; return; }
 
+  bloquearFormulario(true);
   try {
-    const r = await api("/correcciones", {
-      method: "POST",
-      body: JSON.stringify({
-        viaje_id: parseInt(document.getElementById("c-viaje").value, 10),
-        campo: document.getElementById("c-campo").value,
-        valor_nuevo: valor, motivo,
-      }),
-    });
-    salida.innerHTML = `<p class="ok">Corrección aplicada: ${r.campo} pasó de
-      ${eur(r.valor_original)} a ${eur(r.valor_nuevo)}. ${r.nota}</p>`;
+    const r = await api("/correcciones", {method: "POST", body: JSON.stringify({
+      viaje_id: +document.getElementById("c-viaje").value,
+      campo: document.getElementById("c-campo").value,
+      valor_nuevo: valor, motivo,
+    })});
+    salida.innerHTML = `<p class="ok">Corrección aplicada en el viaje ${r.viaje_id}: ${esc(NOMBRE_CAMPO[r.campo])} pasa de
+      ${esc(valorCampo(r.campo, r.valor_original))} a ${esc(valorCampo(r.campo, r.valor_nuevo))}. ${esc(r.nota)}</p>`;
     document.getElementById("c-motivo").value = "";
     document.getElementById("c-valor").value = "";
-    await refrescarTodo();
+    await refrescarPanel(true);
   } catch (ex) {
-    salida.innerHTML = `<p class="fallo">${ex.message}</p>`;
+    if (ex.estado !== 401) salida.innerHTML = `<p class="fallo">${esc(ex.message)}</p>`;
+  } finally {
+    bloquearFormulario(false);
   }
 }
 
@@ -491,21 +830,43 @@ async function enviarCancelacion() {
   const salida = document.getElementById("resultado-correccion");
   salida.innerHTML = "";
   const motivo = document.getElementById("c-motivo").value.trim();
-  if (motivo.length < 3) { salida.innerHTML = `<p class="fallo">Indica el motivo de la cancelación.</p>`; return; }
+  const v = viajeSeleccionado();
+  if (!v) return;
+  if (motivo.length < 3) { salida.innerHTML = `<p class="fallo">Indica el motivo de la cancelación en el campo «Motivo».</p>`; return; }
+  if (!confirm(`¿Cancelar el viaje #${v.id} (${zona(v.zona_origen)}, ${usd(v.importe_total)})?\n\n` +
+               `Dejará de contar en las métricas pero seguirá en el historial. No se puede deshacer.`)) return;
+  bloquearFormulario(true);
   try {
-    const r = await api("/correcciones/cancelar", {
-      method: "POST",
-      body: JSON.stringify({
-        viaje_id: parseInt(document.getElementById("c-viaje").value, 10), motivo,
-      }),
-    });
-    salida.innerHTML = `<p class="ok">Viaje ${r.viaje_id} cancelado. ${r.nota}</p>`;
+    const r = await api("/correcciones/cancelar", {method: "POST",
+      body: JSON.stringify({viaje_id: v.id, motivo})});
+    salida.innerHTML = `<p class="ok">Viaje ${r.viaje_id} cancelado. ${esc(r.nota)}</p>`;
     document.getElementById("c-motivo").value = "";
-    await refrescarTodo();
+    await refrescarPanel(true);
   } catch (ex) {
-    salida.innerHTML = `<p class="fallo">${ex.message}</p>`;
+    if (ex.estado !== 401) salida.innerHTML = `<p class="fallo">${esc(ex.message)}</p>`;
+  } finally {
+    bloquearFormulario(false);
   }
 }
+
+/* ---------------- arranque ---------------- */
+(async () => {
+  const hayApi = await detectarApi();
+  document.getElementById("enlace-calidad").href = API + "/metricas/calidad";
+  document.getElementById("enlace-docs").href =
+    (API === "/api" ? `${location.protocol}//${location.hostname}:8000` : API) + "/docs";
+  if (!hayApi) {
+    const err = document.getElementById("error-login");
+    err.textContent = "No se encuentra la API. Si acabas de lanzar docker compose, espera unos segundos y recarga.";
+    err.style.display = "block";
+    return;
+  }
+  const guardado = almacen.get("pids_token");
+  if (guardado) {
+    token = guardado;
+    try { await iniciarSesion(); } catch (ex) { if (ex.estado !== 401) salir(ex.message); }
+  }
+})();
 </script>
 </body>
 </html>

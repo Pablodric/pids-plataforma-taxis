@@ -2,38 +2,11 @@
 
 ## Visión general
 
-```
-                        ┌──────────────────────────┐
-   Navegador ─────────► │  Panel web (nginx)       │
-                        │  chat + gráficas + E6    │
-                        └───────────┬──────────────┘
-                                    │ HTTP + JWT
-                                    ▼
-    ┌───────────────────────────────────────────────────────────┐
-    │  API (FastAPI)                                            │
-    │                                                           │
-    │  1. auth.py       valida el JWT  → empresa + rol     (E7) │
-    │  2. cuotas.py     límite de consumo por empresa      (E7) │
-    │  3. motor.py      diálogo: LLM  ó  reglas                 │
-    │  4. herramientas  catálogo recortado según el rol    (E7) │
-    │  5. repositorio   SQL de negocio                     (E6) │
-    └───────────┬───────────────────────────────┬───────────────┘
-                │                               │
-                ▼                               ▼
-    ┌───────────────────────┐      ┌──────────────────────────┐
-    │  Redis                │      │  PostgreSQL              │
-    │  · historial de chat  │      │  · viajes (inmutable)    │
-    │  · contadores cuota   │      │  · correcciones (log)    │
-    └───────────────────────┘      │  · vista vigente         │
-                                   │  · cubo de métricas      │
-                                   │  · RLS por empresa       │
-                                   └──────────▲───────────────┘
-                                              │
-                                   ┌──────────┴───────────────┐
-                                   │  Ingesta (una vez)       │
-                                   │  CSV TLC + zonas NYC     │
-                                   └──────────────────────────┘
-```
+![Arquitectura](arquitectura.png)
+
+El diagrama se genera desde código (`docs/diagramas/arquitectura.py`): si cambia
+la arquitectura, se edita el script y se regenera. Las decisiones que hay detrás
+de cada caja están en los [ADR](adr/).
 
 ## Componentes del chatbot
 
@@ -41,9 +14,9 @@ Siguiendo el esquema de agente conversacional de la asignatura:
 
 | Componente del esquema | Dónde está | Qué hace aquí |
 |---|---|---|
-| Interfaz de usuario | `web/index.html` | Chat, gráficas y formulario de correcciones |
-| NLU (intención y entidades) | `motor.py`, `proveedor_*.py` | *Function calling* del LLM, o detección por palabras clave |
-| Gestión del diálogo | `proveedor_*.py` + Redis | Bucle de herramientas y memoria de conversación |
+| Interfaz de usuario | `web/index.html` (servido por nginx) | Chat con confirmaciones Sí/No, gráficas y formulario de correcciones |
+| NLU (intención y entidades) | `nlu_llm.py` (Ollama) / `nlu.py` | Modelo local Qwen2.5 afinado con LoRA que devuelve un JSON con esquema forzado; reglas como respaldo |
+| Gestión del diálogo | `motor.py` + Redis | Bucle de herramientas, historial, contexto para preguntas de seguimiento y confirmación de escrituras |
 | Acciones | `herramientas.py` | Catálogo de funciones, recortado por rol |
 | Acceso a datos | `repositorio.py` | SQL con contexto de empresa |
 | Base de conocimiento | `zonas` en Postgres | Catálogo de las 265 zonas oficiales de NYC |
@@ -71,6 +44,8 @@ Dos usos, ambos mal encajados en Postgres:
   turno de chat.
 - **Contadores de cuota** (E7): necesitan operaciones atómicas de incremento y
   caducidad, que es exactamente para lo que sirve un `sorted set` de Redis.
+  La comprobación y el consumo van en un script Lua, que Redis ejecuta de
+  forma atómica: con peticiones simultáneas nunca se concede más de la cuota.
 
 Tener dos almacenamientos con responsabilidades distintas responde además al
 criterio de *"incluya varias opciones de almacenamiento"*.
@@ -80,19 +55,26 @@ criterio de *"incluya varias opciones de almacenamiento"*.
 Validación automática de entradas con Pydantic, documentación interactiva
 generada sola (`/docs`, que sirve de prueba de concepto de la API sin escribir
 un cliente), y un sistema de dependencias que encaja bien con la comprobación de
-rol: `Depends(exigir_rol("operador"))` se lee como lo que hace.
+permiso: `Depends(exigir_permiso("corregir"))` se lee como lo que hace.
 
-### Motor de diálogo intercambiable
+### Modelo local afinado como NLU (versión 4)
 
-La decisión de fondo no fue *qué LLM usar*, sino **no atarse a ninguno**. El
-motor está separado en proveedores y se elige con una variable de entorno:
-`reglas`, `ollama`, `openai` (compatible: Groq, Gemini, OpenAI) o `anthropic`.
+El chatbot usa un modelo pequeño (Qwen2.5-1.5B) servido por **Ollama** y
+afinado con LoRA para esta plataforma. Su único trabajo es convertir la frase
+en un JSON validado (intención y entidades). Los permisos, las confirmaciones
+y las cifras siguen en el código y en la base de datos. Motivos, alternativas
+descartadas, dataset, entrenamiento y evaluación: [`llm/README.md`](../llm/README.md).
 
-El motivo es que en los cuatro casos se usan las mismas herramientas y la misma
-capa de datos. El aislamiento entre empresas y las correcciones viven en
-Postgres y en `repositorio.py`, no en el modelo, así que cambiar de proveedor
-**no puede romper E6 ni E7**. Esto se comprueba en las pruebas: la batería pasa
-igual en modo reglas que con un proveedor de LLM configurado.
+- **Por qué local:** los datos de las empresas no salen de la plataforma, no
+  hay coste por mensaje y la demo no depende de la red. Encaja con E7.
+- **Por qué afinado:** con frases que no ha visto, el NLU por reglas acierta
+  el 65 % de las intenciones. Un modelo pequeño generaliza mejor a paráfrasis
+  tras un entrenamiento corto, y sigue corriendo en CPU.
+- **Por qué solo NLU:** un modelo de 1,5B no es fiable encadenando
+  herramientas ni redactando cifras. Como extractor con salida estructurada
+  sí lo es, y su salida se puede verificar.
+
+### LLM con *function calling* (opción `anthropic`), con respaldo por reglas
 
 Frente a Rasa o DialogFlow:
 
@@ -100,40 +82,47 @@ Frente a Rasa o DialogFlow:
   depender de una cuenta de Google y complica desplegar todo con un solo
   `docker compose up`.
 - **Rasa** es una opción sólida y auto-alojada, pero exige entrenar un modelo de
-  intenciones con ejemplos de frases; para un dominio de nueve funciones bien
+  intenciones con ejemplos de frases; para un dominio de diez funciones bien
   definidas, el *function calling* llega al mismo sitio sin mantener un conjunto
   de entrenamiento.
-- **Function calling** permite además que el modelo encadene varias llamadas
-  (*"compara la tarifa media de Manhattan con la de Brooklyn"*) sin declarar ese
-  flujo de antemano.
+- **LLM con function calling** permite además que el modelo encadene varias
+  llamadas (*"compara la tarifa media de Manhattan con la de Brooklyn"*) sin que
+  haya que declarar ese flujo de antemano.
 
-**Ollama como opción recomendada.** Levantar el modelo en un contenedor propio
-es lo más coherente con el resto del despliegue: no hace falta ninguna clave, no
-hay coste, y sobre todo **los datos no salen de la plataforma**. Esto último
-importa en un escenario multiempresa: con un proveedor externo, los resultados
-de las consultas viajan a un tercero, lo que sería directamente incompatible con
-una restricción de privacidad como E3.
+El **modo reglas** no es un plan B improvisado: comparte exactamente el mismo
+catálogo de herramientas y la misma capa de datos, así que la plataforma
+responde con o sin LLM. Cubre el riesgo real de que la demostración dependa de
+un servicio de pago externo.
 
-**El modo reglas no es un plan B improvisado.** Comparte el catálogo de
-herramientas y la capa de datos, cubre los nueve casos de uso y actúa además de
-red de seguridad: si el proveedor configurado falla en caliente, la petición se
-resuelve en modo reglas en lugar de devolver un error, y la respuesta indica que
-hubo degradación.
+### El modo reglas, en detalle
+
+Sin LLM, `nlu.py` extrae intención y entidades con expresiones regulares sobre
+el texto normalizado (minúsculas, sin tildes, siempre por palabra completa) y
+`motor.py` gestiona el diálogo con un pequeño estado en Redis:
+
+- **Contexto:** la última consulta y sus filtros. *«Zonas con más viajes»* →
+  *«¿y en Brooklyn?»* repite la consulta de zonas filtrando por distrito.
+- **Fechas:** *«el 1 de enero»*, *«31/12/2019»*, *«nochevieja»*. Si falta el
+  año se elige el de los datos (2020), no el actual.
+- **Escrituras con confirmación:** *«el viaje 411 tenía mal la tarifa, eran
+  23,50»* no escribe nada: previsualiza el cambio (valor vigente → nuevo, motivo)
+  y lo deja pendiente hasta que el usuario responde *sí*. Cualquier otra
+  respuesta lo descarta. Es la misma regla que se le da al LLM en sus
+  instrucciones: una corrección es permanente, así que se confirma antes.
 
 ## Despliegue
 
-Cinco servicios en `docker-compose.yml`, con dependencias declaradas por estado
-de salud para que el arranque sea determinista:
+Siete servicios en `docker-compose.yml`, con dependencias declaradas por estado
+de salud para que el arranque sea determinista (más `ollama` y `ollama-init`,
+que instala el modelo y termina; la API no los espera):
 
 ```
-db ──(healthy)──► ingesta ──(completed)──► api ──► web
+db ──(healthy)──► ingesta ──(completed)──► api ──► web (nginx)
 cache ──(healthy)───────────────────────────┘
-ollama ──(healthy)──► ollama-modelo        (perfil opcional)
 ```
 
-Ollama va en un **perfil** de Compose, así que no se levanta ni se descarga
-salvo que se pida expresamente con `--profile ollama`. El arranque normal del
-proyecto no paga ese coste.
+El navegador solo habla con nginx: sirve el panel y reenvía `/api/*` a la API
+por la red interna. Postgres y Redis no publican puertos al equipo anfitrión.
 
 La API espera a que la ingesta **termine correctamente**
 (`service_completed_successfully`), no solo a que arranque. Así nunca se

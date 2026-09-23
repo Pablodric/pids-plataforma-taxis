@@ -17,70 +17,38 @@ DATABASE_URL = os.environ.get(
 )
 REDIS_URL = os.environ.get("REDIS_URL", "redis://cache:6379/0")
 
-JWT_SECRETO = os.environ.get("JWT_SECRETO", "cambiar-en-produccion")
+JWT_SECRETO = os.environ.get("JWT_SECRETO", "").strip()
+if len(JWT_SECRETO) < 32:
+    # HS256 exige al menos 32 bytes. Si el .env no trae un secreto valido
+    # se genera uno aleatorio al arrancar: la demo funciona igual y los
+    # tokens simplemente caducan si se reinicia la API.
+    import secrets as _secrets
+    JWT_SECRETO = _secrets.token_urlsafe(48)
 JWT_ALGORITMO = "HS256"
 JWT_MINUTOS = _entero("JWT_MINUTOS", 480)
 
-
 # ---------------------------------------------------------------------
-# Motor del chatbot.
-#
-# La plataforma no esta atada a ningun proveedor de LLM. Hay tres
-# opciones y se eligen con una variable de entorno:
-#
-#   reglas     NLU propio por palabras clave. Cero dependencias externas,
-#              cero coste. Es el modo por defecto si no se configura nada.
-#   ollama     Modelo abierto ejecutandose en un contenedor propio. Sin
-#              clave, sin coste y sin que los datos salgan de la
-#              plataforma. Habla el protocolo de OpenAI.
-#   openai     Cualquier API compatible con OpenAI (Groq, Gemini, OpenAI).
-#              Necesita clave, pero varias tienen nivel gratuito.
-#   anthropic  API de Anthropic. Necesita clave de pago.
-#
-# Las herramientas y la capa de datos son las mismas en los cuatro casos:
-# el aislamiento por empresa y las correcciones no dependen del motor.
+# Motor del chatbot. LLM_PROVEEDOR:
+#   "ollama"    -> modelo local afinado (carpeta llm/) como NLU. Opcion por
+#                  defecto en docker compose: sin coste, sin datos fuera.
+#   "anthropic" -> agente con function calling sobre la API de Anthropic.
+#   "reglas"    -> solo el NLU por reglas.
+# En cualquier modo, si el modelo no responde se usan las reglas.
 # ---------------------------------------------------------------------
-
-LLM_PROVEEDOR = os.environ.get("LLM_PROVEEDOR", "auto").strip().lower()
 LLM_API_KEY = os.environ.get("LLM_API_KEY", "").strip()
-LLM_MODELO = os.environ.get("LLM_MODELO", "").strip()
-LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "").strip()
+LLM_MODELO = os.environ.get("LLM_MODELO", "claude-sonnet-5")
+LLM_PROVEEDOR = os.environ.get(
+    "LLM_PROVEEDOR", "anthropic" if LLM_API_KEY else "reglas"
+).strip().lower()
+LLM_ACTIVO = LLM_PROVEEDOR == "anthropic" and bool(LLM_API_KEY)
+OLLAMA_ACTIVO = LLM_PROVEEDOR == "ollama"
 
-# Valores por defecto de cada proveedor
-_DEFECTOS = {
-    "ollama": {"modelo": "qwen2.5:3b", "base_url": "http://ollama:11434/v1"},
-    "openai": {"modelo": "llama-3.3-70b-versatile", "base_url": "https://api.openai.com/v1"},
-    "anthropic": {"modelo": "claude-sonnet-5", "base_url": ""},
-}
-
-
-def _resolver_proveedor() -> str:
-    """
-    'auto' elige el primer motor que este realmente configurado, para que
-    el proyecto arranque siempre sin tocar nada.
-    """
-    if LLM_PROVEEDOR in ("reglas", "ollama", "openai", "anthropic"):
-        return LLM_PROVEEDOR
-    if LLM_BASE_URL:
-        return "openai"
-    if LLM_API_KEY:
-        return "anthropic"
-    return "reglas"
-
-
-PROVEEDOR = _resolver_proveedor()
-
-if PROVEEDOR != "reglas":
-    _d = _DEFECTOS[PROVEEDOR]
-    LLM_MODELO = LLM_MODELO or _d["modelo"]
-    LLM_BASE_URL = LLM_BASE_URL or _d["base_url"]
-
-# Ollama no pide clave real, pero el cliente de OpenAI exige que haya algo.
-if PROVEEDOR == "ollama" and not LLM_API_KEY:
-    LLM_API_KEY = "ollama"
-
-LLM_ACTIVO = PROVEEDOR != "reglas"
-LLM_TIMEOUT = _entero("LLM_TIMEOUT", 120)
+OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
+# Modelo afinado (lo crea llm/instalar_en_ollama.sh) y modelo base de
+# respaldo, que se usa mientras no se haya instalado el afinado.
+OLLAMA_MODELO = os.environ.get("OLLAMA_MODELO", "pids-nlu")
+OLLAMA_MODELO_RESPALDO = os.environ.get("OLLAMA_MODELO_RESPALDO", "qwen2.5:1.5b")
+OLLAMA_TIMEOUT = float(os.environ.get("OLLAMA_TIMEOUT", "30"))
 
 # E7: ventana del limitador de consumo por empresa.
 VENTANA_CUOTA_SEG = _entero("VENTANA_CUOTA_SEG", 60)
@@ -88,10 +56,3 @@ VENTANA_CUOTA_SEG = _entero("VENTANA_CUOTA_SEG", 60)
 # Historial de conversacion
 MAX_TURNOS_HISTORIAL = _entero("MAX_TURNOS_HISTORIAL", 12)
 TTL_SESION_SEG = _entero("TTL_SESION_SEG", 3600)
-
-
-def descripcion_modo() -> str:
-    """Texto corto para /salud y para la cabecera del panel."""
-    if PROVEEDOR == "reglas":
-        return "reglas"
-    return f"{PROVEEDOR}:{LLM_MODELO}"

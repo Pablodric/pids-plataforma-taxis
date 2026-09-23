@@ -28,8 +28,9 @@ HERRAMIENTAS_BASE = [
         "name": "resumen_metricas",
         "description": (
             "Resumen de los viajes de la empresa del usuario: numero de viajes, "
-            "importe medio, importe total y distancia media. Permite filtrar por "
-            "fecha (YYYY-MM-DD) y por distrito de Nueva York."
+            "importe medio, importe total, propina media y distancia media "
+            "(importes en dolares USD, distancias en millas). Permite filtrar "
+            "por fecha (YYYY-MM-DD) y por distrito de Nueva York."
         ),
         "input_schema": {
             "type": "object",
@@ -50,6 +51,7 @@ HERRAMIENTAS_BASE = [
             "properties": {
                 "limite": {"type": "integer", "description": "Cuantas zonas devolver (por defecto 8)"},
                 "fecha": {"type": "string", "description": "Fecha YYYY-MM-DD, opcional"},
+                "borough": {"type": "string", "description": "Distrito, opcional"},
             },
         },
     },
@@ -82,6 +84,19 @@ HERRAMIENTAS_BASE = [
         },
     },
     {
+        "name": "detalle_viaje",
+        "description": (
+            "Ficha de un viaje concreto: zona de origen y destino, valores tal y "
+            "como se ingirieron, valores vigentes tras las correcciones, si esta "
+            "cancelado y la cadena completa de cambios."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {"viaje_id": {"type": "integer"}},
+            "required": ["viaje_id"],
+        },
+    },
+    {
         "name": "historial_correcciones",
         "description": (
             "Explica por que ha cambiado una cifra: devuelve las correcciones y "
@@ -105,7 +120,9 @@ HERRAMIENTAS_OPERADOR = [
         "description": (
             "Registra que un proveedor ha corregido un dato de un viaje ya ingerido. "
             "Conserva el valor original y recalcula solo las metricas afectadas. "
-            "Campos corregibles: importe_total, distancia, pasajeros, propina."
+            "Campos corregibles: importe_total, distancia, pasajeros, propina. "
+            "Es una escritura permanente: antes de llamarla, confirma con el "
+            "usuario el viaje, el campo y el valor exactos."
         ),
         "input_schema": {
             "type": "object",
@@ -125,7 +142,8 @@ HERRAMIENTAS_OPERADOR = [
         "name": "cancelar_viaje",
         "description": (
             "Cancela un viaje ya ingerido. Deja de contar en las metricas pero "
-            "permanece en el historico con su motivo de cancelacion."
+            "permanece en el historico con su motivo de cancelacion. Es "
+            "irreversible: confirma antes con el usuario."
         ),
         "input_schema": {
             "type": "object",
@@ -151,36 +169,16 @@ HERRAMIENTAS_AUDITOR = [
 
 
 def herramientas_para(sesion: Sesion) -> list[dict]:
-    """
-    Catalogo recortado al rol: el modelo no ve lo que no puede usar.
-    El formato canonico es el de Anthropic (name, description,
-    input_schema); 'a_formato_openai' lo traduce para los demas.
-    """
+    """Catalogo recortado al rol: el modelo no ve lo que no puede usar."""
     catalogo = list(HERRAMIENTAS_BASE)
-    if sesion.puede("operador"):
+    if sesion.puede("corregir"):
         catalogo += HERRAMIENTAS_OPERADOR
-    if sesion.puede("auditor"):
+    if sesion.puede("ver_global"):
         catalogo += HERRAMIENTAS_AUDITOR
     return catalogo
 
 
-def a_formato_openai(catalogo: list[dict]) -> list[dict]:
-    """
-    Traduce el catalogo al esquema de function calling de OpenAI, que es
-    el que hablan tambien Ollama, Groq y Gemini. Lo unico que cambia es
-    la envoltura: los esquemas de parametros son JSON Schema en ambos.
-    """
-    return [
-        {
-            "type": "function",
-            "function": {
-                "name": h["name"],
-                "description": h["description"],
-                "parameters": h["input_schema"],
-            },
-        }
-        for h in catalogo
-    ]
+ESCRITURAS = frozenset({"registrar_correccion", "cancelar_viaje"})
 
 
 # ---------------------------------------------------------------------
@@ -196,23 +194,39 @@ def _fecha(valor) -> date | None:
         return None
 
 
+def _entero(valor, defecto: int) -> int:
+    try:
+        return int(valor)
+    except (TypeError, ValueError):
+        return defecto
+
+
 def ejecutar(nombre: str, argumentos: dict, sesion: Sesion) -> dict:
     """
     Ejecuta la herramienta pedida por el modelo.
 
-    El control de rol se repite aqui aunque el catalogo ya este recortado:
-    si el modelo alucinara un nombre de funcion que no le corresponde, la
-    llamada se rechaza igualmente.
+    El control de permisos se repite aqui aunque el catalogo ya este
+    recortado: si el modelo alucinara un nombre de funcion que no le
+    corresponde, la llamada se rechaza igualmente. Los argumentos mal
+    formados devuelven un error legible en vez de una excepcion, para
+    que el modelo pueda corregirse en la siguiente vuelta.
     """
     argumentos = argumentos or {}
+    try:
+        return _ejecutar(nombre, argumentos, sesion)
+    except (KeyError, TypeError, ValueError) as exc:
+        return {"error": f"Argumentos no validos para {nombre}: {exc}", "codigo": 422}
 
+
+def _ejecutar(nombre: str, argumentos: dict, sesion: Sesion) -> dict:
     if nombre == "resumen_metricas":
         return repositorio.resumen_metricas(
             sesion, _fecha(argumentos.get("fecha")), argumentos.get("borough")
         )
     if nombre == "metricas_por_zona":
         return repositorio.metricas_por_zona(
-            sesion, int(argumentos.get("limite", 8)), _fecha(argumentos.get("fecha"))
+            sesion, _entero(argumentos.get("limite"), 8),
+            _fecha(argumentos.get("fecha")), argumentos.get("borough"),
         )
     if nombre == "metricas_por_borough":
         return repositorio.metricas_por_borough(sesion)
@@ -221,32 +235,36 @@ def ejecutar(nombre: str, argumentos: dict, sesion: Sesion) -> dict:
     if nombre == "reparto_pagos":
         return repositorio.reparto_pagos(sesion)
     if nombre == "listar_viajes":
-        return repositorio.listar_viajes(sesion, int(argumentos.get("limite", 10)))
+        return repositorio.listar_viajes(sesion, _entero(argumentos.get("limite"), 10))
+    if nombre == "detalle_viaje":
+        return repositorio.detalle_viaje(sesion, int(argumentos["viaje_id"]))
     if nombre == "historial_correcciones":
+        viaje = argumentos.get("viaje_id")
         return repositorio.historial_correcciones(
-            sesion, argumentos.get("viaje_id"), int(argumentos.get("limite", 20))
+            sesion, int(viaje) if viaje is not None else None,
+            _entero(argumentos.get("limite"), 20),
         )
 
-    if nombre in ("registrar_correccion", "cancelar_viaje"):
-        if not sesion.puede("operador"):
-            return {"error": "No autorizado: se requiere rol operador"}
+    if nombre in ESCRITURAS:
+        if not sesion.puede("corregir"):
+            return {"error": "No autorizado: se requiere rol operador", "codigo": 403}
         if nombre == "registrar_correccion":
             return repositorio.registrar_correccion(
                 sesion,
                 int(argumentos["viaje_id"]),
                 str(argumentos["campo"]),
                 float(argumentos["valor_nuevo"]),
-                str(argumentos.get("motivo", "sin motivo indicado")),
+                str(argumentos.get("motivo") or "Corrección solicitada por chat"),
             )
         return repositorio.cancelar_viaje(
             sesion,
             int(argumentos["viaje_id"]),
-            str(argumentos.get("motivo", "sin motivo indicado")),
+            str(argumentos.get("motivo") or "Cancelación solicitada por chat"),
         )
 
     if nombre == "metricas_globales":
-        if not sesion.puede("auditor"):
-            return {"error": "No autorizado: se requiere rol auditor"}
+        if not sesion.puede("ver_global"):
+            return {"error": "No autorizado: se requiere rol auditor", "codigo": 403}
         return repositorio.metricas_globales(sesion)
 
-    return {"error": f"Herramienta desconocida: {nombre}"}
+    return {"error": f"Herramienta desconocida: {nombre}", "codigo": 404}

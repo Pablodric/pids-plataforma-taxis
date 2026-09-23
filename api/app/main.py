@@ -1,34 +1,41 @@
 """
 API de la plataforma.
 
-Expone tres bloques:
+Expone cuatro bloques:
   /auth/*        login y datos de la sesion
   /chat          el agente conversacional
-  /datos/*       metricas y correcciones en JSON (alimentan el panel web)
+  /datos/*       metricas en JSON (alimentan el panel web)
+  /correcciones  E6: registrar y consultar correcciones
 
 Todas las rutas de datos y de chat pasan por:
-  1. Validacion del JWT           -> identidad de empresa y rol (E7)
-  2. Limitador de cuota por empresa (E7)
-  3. Conexion a Postgres con contexto RLS (E7)
+  1. Validacion del JWT y del permiso      -> empresa y rol (E7)
+  2. Limitador de cuota por empresa        (E7)
+  3. Conexion a Postgres con contexto RLS  (E7)
 y registran el acceso en la auditoria, que alimenta las metricas de calidad.
 """
 
 import json
 from contextlib import asynccontextmanager
-from datetime import date, datetime
+from datetime import UTC, date, datetime
+from typing import Literal
 
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from app import config, cuotas, db, motor, repositorio
-from app.auth import Sesion, autenticar, emitir_token, exigir_rol, sesion_actual
+from app import config, cuotas, db, motor, nlu_llm, repositorio
+from app import observabilidad as obs
+from app.auth import Sesion, autenticar, emitir_token, exigir_permiso, sesion_actual
 
 
 @asynccontextmanager
 async def ciclo_vida(app: FastAPI):
     db.abrir_recursos()
+    if config.OLLAMA_ACTIVO:
+        # Carga el modelo en segundo plano: la API arranca sin esperarle
+        import threading
+        threading.Thread(target=nlu_llm.cliente().calentar, daemon=True).start()
     yield
     db.cerrar_recursos()
 
@@ -36,18 +43,22 @@ async def ciclo_vida(app: FastAPI):
 app = FastAPI(
     title="Plataforma de datos de taxis - E6 + E7",
     description="Datos corregibles (E6) sobre una plataforma multiempresa (E7)",
-    version="2.0",
+    version="3.0",
     lifespan=ciclo_vida,
 )
 
-# El panel web se sirve como fichero estatico desde otro origen.
+# El panel se sirve normalmente a traves del proxy de nginx (mismo origen,
+# ruta /api). CORS queda abierto para poder abrir index.html suelto o usar
+# la API desde otras herramientas durante la demo.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["X-Cuota-Restante"],
+    expose_headers=["X-Cuota-Limite", "X-Cuota-Restante", "Retry-After", "X-Request-ID"],
 )
+app.add_middleware(obs.MiddlewareObservabilidad)
+obs.configurar_logs()
 
 
 # ---------------------------------------------------------------------
@@ -55,8 +66,8 @@ app.add_middleware(
 # ---------------------------------------------------------------------
 
 class PeticionLogin(BaseModel):
-    email: str
-    password: str
+    email: str = Field(min_length=3, max_length=200)
+    password: str = Field(min_length=1, max_length=200)
 
 
 class PeticionChat(BaseModel):
@@ -65,14 +76,14 @@ class PeticionChat(BaseModel):
 
 
 class PeticionCorreccion(BaseModel):
-    viaje_id: int
-    campo: str
+    viaje_id: int = Field(gt=0)
+    campo: Literal["importe_total", "distancia", "pasajeros", "propina"]
     valor_nuevo: float
     motivo: str = Field(min_length=3, max_length=500)
 
 
 class PeticionCancelacion(BaseModel):
-    viaje_id: int
+    viaje_id: int = Field(gt=0)
     motivo: str = Field(min_length=3, max_length=500)
 
 
@@ -83,27 +94,69 @@ class PeticionCancelacion(BaseModel):
 def _con_cuota(sesion: Sesion, accion: str, coste: int = 1) -> dict:
     """Aplica la cuota de la empresa y deja rastro en la auditoria."""
     try:
-        estado = cuotas.consumir(sesion.empresa_id, coste)
+        return cuotas.consumir(sesion.empresa_id, coste)
     except HTTPException:
-        repositorio.registrar_auditoria(
-            sesion.email, sesion.empresa_id, "cuota_superada", accion, False
-        )
+        obs.CUOTA_RECHAZOS.labels(sesion.empresa_id).inc()
+        # Se audita UNA vez por ventana, no cada rechazo: con una rafaga de
+        # miles de 429 cada uno escribia en Postgres, y el rechazo "barato"
+        # acababa cargando la base de datos que comparten todas las empresas
+        # (lo destapo scripts/vecino_ruidoso.py). El recuento exacto esta en
+        # la metrica pids_cuota_rechazos_total.
+        if db.cache().set(f"cuota:auditada:{sesion.empresa_id}", 1, nx=True,
+                          ex=config.VENTANA_CUOTA_SEG):
+            repositorio.registrar_auditoria(
+                sesion.email, sesion.empresa_id, "cuota_superada", accion, False
+            )
         raise
-    return estado
 
 
-def _historial(session_id: str, sesion: Sesion) -> list:
-    clave = f"hist:{sesion.empresa_id}:{sesion.email}:{session_id}"
-    crudo = db.cache().get(clave)
-    return json.loads(crudo) if crudo else []
+def cobrar(accion: str, coste: int = 1, permiso: str = "consultar"):
+    """
+    Dependencia: comprueba el permiso, consume cuota y publica el estado
+    de la cuota en las cabeceras X-Cuota-*.
+    Uso: sesion: Sesion = Depends(cobrar("datos_resumen"))
+    """
+    def dependencia(response: Response,
+                    sesion: Sesion = Depends(exigir_permiso(permiso))) -> Sesion:
+        estado = _con_cuota(sesion, accion, coste)
+        response.headers["X-Cuota-Limite"] = str(estado["limite"])
+        response.headers["X-Cuota-Restante"] = str(estado["restantes"])
+        return sesion
+    return dependencia
 
 
-def _guardar_historial(session_id: str, sesion: Sesion, historial: list) -> None:
-    clave = f"hist:{sesion.empresa_id}:{sesion.email}:{session_id}"
+def _o_error(resultado: dict) -> dict:
+    """Traduce un error de negocio del repositorio a su codigo HTTP."""
+    if "error" in resultado:
+        raise HTTPException(status_code=resultado.get("codigo", 400),
+                            detail=resultado["error"])
+    return resultado
+
+
+def _clave_conversacion(session_id: str, sesion: Sesion) -> str:
+    return f"hist:{sesion.empresa_id}:{sesion.email}:{session_id}"
+
+
+def _cargar_conversacion(session_id: str, sesion: Sesion) -> tuple[list, dict]:
+    crudo = db.cache().get(_clave_conversacion(session_id, sesion))
+    if not crudo:
+        return [], {}
+    try:
+        estado = json.loads(crudo)
+    except ValueError:
+        return [], {}
+    if isinstance(estado, list):          # formato antiguo: solo historial
+        return [m for m in estado if isinstance(m.get("content"), str)], {}
+    return estado.get("historial", []), estado.get("contexto", {})
+
+
+def _guardar_conversacion(session_id: str, sesion: Sesion,
+                          historial: list, contexto: dict) -> None:
     recortado = historial[-config.MAX_TURNOS_HISTORIAL * 2:]
     db.cache().set(
-        clave,
-        json.dumps(recortado, ensure_ascii=False, default=str),
+        _clave_conversacion(session_id, sesion),
+        json.dumps({"historial": recortado, "contexto": contexto},
+                   ensure_ascii=False, default=str),
         ex=config.TTL_SESION_SEG,
     )
 
@@ -114,7 +167,7 @@ def _fecha(valor: str | None) -> date | None:
     try:
         return datetime.strptime(valor, "%Y-%m-%d").date()
     except ValueError:
-        raise HTTPException(status_code=400, detail="Fecha no valida, usa YYYY-MM-DD")
+        raise HTTPException(status_code=400, detail="Fecha no válida, usa YYYY-MM-DD") from None
 
 
 # ---------------------------------------------------------------------
@@ -125,19 +178,40 @@ def _fecha(valor: str | None) -> date | None:
 def salud():
     estado = db.comprobar_salud()
     todo_ok = all(estado.values())
-    return JSONResponse(
-        status_code=200 if todo_ok else 503,
-        content={
-            "estado": "ok" if todo_ok else "degradado",
-            "componentes": estado,
-            "modo_chatbot": config.descripcion_modo(),
-        },
-    )
+    contenido = {
+        "estado": "ok" if todo_ok else "degradado",
+        "componentes": estado,
+        "modo_chatbot": _modo_chatbot(),
+        "modelo": config.LLM_MODELO if config.LLM_ACTIVO else None,
+    }
+    if config.OLLAMA_ACTIVO:
+        # Ollama no cuenta para el estado de salud: si falta, el chatbot
+        # sigue funcionando con reglas (degradado, no caido).
+        contenido["ollama"] = nlu_llm.estado()
+        contenido["modelo"] = contenido["ollama"]["modelo"]
+    return JSONResponse(status_code=200 if todo_ok else 503, content=contenido)
+
+
+def _modo_chatbot() -> str:
+    if config.LLM_ACTIVO:
+        return "llm"
+    if config.OLLAMA_ACTIVO:
+        disponible = nlu_llm.cliente().modelo_activo() is not None
+        obs.OLLAMA_DISPONIBLE.set(1 if disponible else 0)
+        return "ollama" if disponible else "reglas"
+    return "reglas"
+
+
+@app.get("/metrics", tags=["sistema"], include_in_schema=False)
+def metricas_prometheus():
+    """Métricas en formato Prometheus (latencias por ruta, cuota, NLU...)."""
+    _modo_chatbot()
+    return obs.exponer()
 
 
 @app.get("/metricas/calidad", tags=["sistema"])
 def metricas_de_calidad():
-    """Las tres metricas de calidad definidas para las restricciones E6 y E7."""
+    """Las métricas de calidad definidas para las restricciones E6 y E7."""
     return repositorio.metricas_calidad()
 
 
@@ -145,15 +219,42 @@ def metricas_de_calidad():
 # Autenticacion
 # ---------------------------------------------------------------------
 
+# Freno a la fuerza bruta: tras MAX_FALLOS fallos seguidos para un correo
+# (o muchos desde una misma IP) se bloquea el login un tiempo, incluso con
+# la contrasena correcta. Contadores en Redis: validos con varias replicas.
+MAX_FALLOS_CORREO, MAX_FALLOS_IP, BLOQUEO_SEG = 5, 30, 300
+
+
+def _bloqueado(claves: list[tuple[str, int]]) -> int | None:
+    for clave, maximo in claves:
+        if int(db.cache().get(clave) or 0) >= maximo:
+            return max(1, db.cache().ttl(clave))
+    return None
+
+
 @app.post("/auth/login", tags=["auth"])
 def login(peticion: PeticionLogin, request: Request):
+    ip = request.client.host if request.client else "?"
+    correo = peticion.email.lower().strip()
+    claves = [(f"login:correo:{correo}", MAX_FALLOS_CORREO), (f"login:ip:{ip}", MAX_FALLOS_IP)]
+    espera = _bloqueado(claves)
+    if espera:
+        obs.LOGIN_BLOQUEOS.inc()
+        repositorio.registrar_auditoria(correo, None, "login_bloqueado", f"ip={ip}", False)
+        raise HTTPException(status_code=429, headers={"Retry-After": str(espera)},
+                            detail=f"Demasiados intentos fallidos. Espera {espera} s.")
+
     sesion = autenticar(peticion.email, peticion.password)
     if sesion is None:
-        repositorio.registrar_auditoria(
-            peticion.email, None, "login_fallido",
-            f"ip={request.client.host if request.client else '?'}", False,
-        )
+        obs.LOGIN_FALLIDOS.inc()
+        tuberia = db.cache().pipeline()
+        for clave, _ in claves:
+            tuberia.incr(clave)
+            tuberia.expire(clave, BLOQUEO_SEG)
+        tuberia.execute()
+        repositorio.registrar_auditoria(correo, None, "login_fallido", f"ip={ip}", False)
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
+    db.cache().delete(claves[0][0])
 
     token, expira_en = emitir_token(sesion)
     repositorio.registrar_auditoria(
@@ -173,10 +274,15 @@ def quien_soy(sesion: Sesion = Depends(sesion_actual)):
     return {
         "email": sesion.email,
         "empresa": sesion.empresa_id,
+        "empresa_nombre": repositorio.nombre_empresa(sesion.empresa_id),
         "rol": sesion.rol,
-        "puede_corregir": sesion.puede("operador"),
-        "puede_ver_global": sesion.puede("auditor"),
+        "puede_corregir": sesion.puede("corregir"),
+        "puede_ver_global": sesion.puede("ver_global"),
         "cuota_consultas_min": cuotas.cuota_de(sesion.empresa_id),
+        "modo_chatbot": _modo_chatbot(),
+        "modelo_nlu": (nlu_llm.cliente().modelo_activo() if config.OLLAMA_ACTIVO else None),
+        "nlu_afinado": (nlu_llm.cliente().es_afinado(nlu_llm.cliente().modelo_activo())
+                        if config.OLLAMA_ACTIVO else False),
     }
 
 
@@ -187,10 +293,18 @@ def quien_soy(sesion: Sesion = Depends(sesion_actual)):
 @app.post("/chat", tags=["chatbot"])
 def chat(peticion: PeticionChat, sesion: Sesion = Depends(sesion_actual)):
     estado_cuota = _con_cuota(sesion, "chat")
-    historial = _historial(peticion.session_id, sesion)
+    historial, contexto = _cargar_conversacion(peticion.session_id, sesion)
 
-    resultado = motor.responder(peticion.mensaje, historial, sesion)
-    _guardar_historial(peticion.session_id, sesion, resultado.pop("historial"))
+    resultado = motor.responder(peticion.mensaje, historial, sesion, contexto)
+    obs.CHAT.labels(resultado["nlu"], resultado["modo"]).inc()
+    if resultado["degradado_desde_llm"]:
+        obs.NLU_FALLOS.labels(resultado["degradado_desde_llm"]).inc()
+    for uso in resultado["herramientas_usadas"]:
+        if uso["herramienta"] in ("registrar_correccion", "cancelar_viaje") \
+                and "error" not in uso["resultado"]:
+            obs.CORRECCIONES.labels(sesion.empresa_id, uso["herramienta"]).inc()
+    _guardar_conversacion(peticion.session_id, sesion,
+                          resultado.pop("historial"), resultado.pop("contexto"))
 
     repositorio.registrar_auditoria(
         sesion.email, sesion.empresa_id, "chat",
@@ -205,54 +319,108 @@ def chat(peticion: PeticionChat, sesion: Sesion = Depends(sesion_actual)):
     }
 
 
+@app.delete("/chat/{session_id}", tags=["chatbot"])
+def olvidar_conversacion(session_id: str, sesion: Sesion = Depends(sesion_actual)):
+    """Empieza una conversacion nueva (borra historial y contexto)."""
+    db.cache().delete(_clave_conversacion(session_id, sesion))
+    return {"ok": True}
+
+
 # ---------------------------------------------------------------------
 # Datos (panel web y consumo directo)
 # ---------------------------------------------------------------------
+
+@app.get("/datos/panel", tags=["datos"])
+def datos_panel(sesion: Sesion = Depends(cobrar("datos_panel"))):
+    """Todo lo que pinta el panel web, en una petición y una unidad de cuota."""
+    datos = repositorio.panel(sesion)
+    return datos
+
 
 @app.get("/datos/resumen", tags=["datos"])
 def datos_resumen(
     fecha: str | None = None,
     borough: str | None = None,
-    sesion: Sesion = Depends(sesion_actual),
+    sesion: Sesion = Depends(cobrar("datos_resumen")),
 ):
-    _con_cuota(sesion, "datos_resumen")
     return repositorio.resumen_metricas(sesion, _fecha(fecha), borough)
 
 
 @app.get("/datos/boroughs", tags=["datos"])
-def datos_boroughs(sesion: Sesion = Depends(sesion_actual)):
-    _con_cuota(sesion, "datos_boroughs")
+def datos_boroughs(sesion: Sesion = Depends(cobrar("datos_boroughs"))):
     return repositorio.metricas_por_borough(sesion)
 
 
 @app.get("/datos/zonas", tags=["datos"])
-def datos_zonas(limite: int = 8, sesion: Sesion = Depends(sesion_actual)):
-    _con_cuota(sesion, "datos_zonas")
-    return repositorio.metricas_por_zona(sesion, min(limite, 25))
+def datos_zonas(limite: int = 8, fecha: str | None = None, borough: str | None = None,
+                sesion: Sesion = Depends(cobrar("datos_zonas"))):
+    return repositorio.metricas_por_zona(sesion, limite, _fecha(fecha), borough)
 
 
 @app.get("/datos/horas", tags=["datos"])
-def datos_horas(sesion: Sesion = Depends(sesion_actual)):
-    _con_cuota(sesion, "datos_horas")
+def datos_horas(sesion: Sesion = Depends(cobrar("datos_horas"))):
     return repositorio.viajes_por_hora(sesion)
 
 
 @app.get("/datos/pagos", tags=["datos"])
-def datos_pagos(sesion: Sesion = Depends(sesion_actual)):
-    _con_cuota(sesion, "datos_pagos")
+def datos_pagos(sesion: Sesion = Depends(cobrar("datos_pagos"))):
     return repositorio.reparto_pagos(sesion)
 
 
 @app.get("/datos/viajes", tags=["datos"])
-def datos_viajes(limite: int = 10, sesion: Sesion = Depends(sesion_actual)):
-    _con_cuota(sesion, "datos_viajes")
-    return repositorio.listar_viajes(sesion, min(limite, 50))
+def datos_viajes(limite: int = 10, sesion: Sesion = Depends(cobrar("datos_viajes"))):
+    return repositorio.listar_viajes(sesion, limite)
+
+
+@app.get("/datos/viajes/{viaje_id}", tags=["datos"])
+def datos_viaje(viaje_id: int, sesion: Sesion = Depends(cobrar("datos_viaje"))):
+    """Ficha de un viaje: valores originales, vigentes y cadena de cambios."""
+    return _o_error(repositorio.detalle_viaje(sesion, viaje_id))
+
+
+@app.get("/datos/en", tags=["datos"])
+def datos_en_instante(instante: str | None = None, antes_de_correccion: int | None = None,
+                      sesion: Sesion = Depends(cobrar("datos_en"))):
+    """
+    E6 · Viaje en el tiempo: métricas tal y como estaban en un instante
+    pasado (ISO 8601), reconstruidas desde el log de correcciones, más las
+    actuales y la diferencia. Con `antes_de_correccion=<id>` se usa el
+    instante justo anterior a esa corrección (precisión de microsegundos).
+    """
+    from datetime import timedelta
+    if antes_de_correccion is not None:
+        momento = repositorio.momento_de_correccion(sesion, antes_de_correccion)
+        if momento is None:
+            raise HTTPException(status_code=404, detail="Esa corrección no existe en tu empresa")
+        resultado = repositorio.resumen_en(sesion, momento - timedelta(microseconds=1))
+        resultado["antes_de_correccion"] = antes_de_correccion
+        return resultado
+    if not instante:
+        raise HTTPException(status_code=400, detail="Indica 'instante' o 'antes_de_correccion'")
+    try:
+        momento = datetime.fromisoformat(instante.replace("Z", "+00:00"))
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Instante no válido, usa ISO 8601") from None
+    if momento.tzinfo is None:
+        momento = momento.replace(tzinfo=UTC)
+    return repositorio.resumen_en(sesion, momento)
+
+
+@app.get("/auditoria/cadena", tags=["auditoria"])
+def auditoria_cadena(sesion: Sesion = Depends(cobrar("verificar_cadena"))):
+    """
+    Verifica la cadena SHA-256 de correcciones (la de tu empresa; todas si
+    eres auditor). Cualquier modificación o borrado, incluso hecho por un
+    superusuario de la base de datos, rompe la cadena y se señala aquí.
+    """
+    return repositorio.verificar_cadena(sesion)
 
 
 @app.get("/datos/globales", tags=["datos"])
-def datos_globales(sesion: Sesion = Depends(exigir_rol("auditor"))):
-    """E7: metricas entre empresas, solo para el rol autorizado."""
-    _con_cuota(sesion, "datos_globales")
+def datos_globales(
+    sesion: Sesion = Depends(cobrar("datos_globales", permiso="ver_global")),
+):
+    """E7: métricas entre empresas, solo para el rol autorizado."""
     return repositorio.metricas_globales(sesion)
 
 
@@ -264,18 +432,16 @@ def datos_globales(sesion: Sesion = Depends(exigir_rol("auditor"))):
 def listar_correcciones(
     viaje_id: int | None = None,
     limite: int = 20,
-    sesion: Sesion = Depends(sesion_actual),
+    sesion: Sesion = Depends(cobrar("listar_correcciones")),
 ):
-    _con_cuota(sesion, "listar_correcciones")
-    return repositorio.historial_correcciones(sesion, viaje_id, min(limite, 100))
+    return repositorio.historial_correcciones(sesion, viaje_id, limite)
 
 
 @app.post("/correcciones", tags=["correcciones"])
 def crear_correccion(
     peticion: PeticionCorreccion,
-    sesion: Sesion = Depends(exigir_rol("operador")),
+    sesion: Sesion = Depends(cobrar("crear_correccion", coste=2, permiso="corregir")),
 ):
-    _con_cuota(sesion, "crear_correccion", coste=2)
     inicio = datetime.now()
     resultado = repositorio.registrar_correccion(
         sesion, peticion.viaje_id, peticion.campo,
@@ -284,10 +450,12 @@ def crear_correccion(
     if "error" in resultado:
         repositorio.registrar_auditoria(
             sesion.email, sesion.empresa_id, "correccion_rechazada",
-            f"viaje={peticion.viaje_id}", False,
+            f"viaje={peticion.viaje_id}: {resultado['error']}",
+            resultado.get("codigo") not in (403, 404),
         )
-        raise HTTPException(status_code=404, detail=resultado["error"])
+        return _o_error(resultado)
 
+    obs.CORRECCIONES.labels(sesion.empresa_id, "registrar_correccion").inc()
     repositorio.registrar_auditoria(
         sesion.email, sesion.empresa_id, "correccion",
         f"viaje={peticion.viaje_id} campo={peticion.campo}", True,
@@ -299,12 +467,17 @@ def crear_correccion(
 @app.post("/correcciones/cancelar", tags=["correcciones"])
 def cancelar(
     peticion: PeticionCancelacion,
-    sesion: Sesion = Depends(exigir_rol("operador")),
+    sesion: Sesion = Depends(cobrar("cancelar_viaje", coste=2, permiso="corregir")),
 ):
-    _con_cuota(sesion, "cancelar_viaje", coste=2)
     resultado = repositorio.cancelar_viaje(sesion, peticion.viaje_id, peticion.motivo)
     if "error" in resultado:
-        raise HTTPException(status_code=404, detail=resultado["error"])
+        repositorio.registrar_auditoria(
+            sesion.email, sesion.empresa_id, "cancelacion_rechazada",
+            f"viaje={peticion.viaje_id}: {resultado['error']}",
+            resultado.get("codigo") not in (403, 404),
+        )
+        return _o_error(resultado)
+    obs.CORRECCIONES.labels(sesion.empresa_id, "cancelar_viaje").inc()
     repositorio.registrar_auditoria(
         sesion.email, sesion.empresa_id, "cancelacion",
         f"viaje={peticion.viaje_id}", True,

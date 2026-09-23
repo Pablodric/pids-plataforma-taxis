@@ -6,6 +6,11 @@ services:
   # Almacenamiento principal: Postgres.
   # Elegido por Row Level Security nativa, que es lo que permite aislar
   # empresas (E7) a nivel de motor y no solo en el codigo de la API.
+  #
+  # Sin puerto publicado: solo lo usan la ingesta y la API por la red
+  # interna. Publicar el 5432 chocaba con cualquier Postgres instalado en
+  # el equipo ("port is already allocated"). Para inspeccionar la base de
+  # datos:  docker compose exec db psql -U postgres -d pids
   # -------------------------------------------------------------------
   db:
     image: postgres:16-alpine
@@ -14,11 +19,9 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: pids
     volumes:
-      - datos_db:/var/lib/postgresql/data
+      - datos_db_v4:/var/lib/postgresql/data
       # Los .sql de esta carpeta se ejecutan solos la primera vez
       - ./db/init:/docker-entrypoint-initdb.d:ro
-    ports:
-      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d pids"]
       interval: 5s
@@ -36,8 +39,6 @@ services:
     image: redis:7-alpine
     command: ["redis-server", "--appendonly", "no", "--maxmemory", "128mb",
               "--maxmemory-policy", "allkeys-lru"]
-    ports:
-      - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -58,6 +59,43 @@ services:
     restart: "no"
 
   # -------------------------------------------------------------------
+  # Modelo de lenguaje local (NLU del chatbot). Sirve el modelo afinado
+  # 'pids-nlu' (carpeta llm/) o, mientras no exista, el base qwen2.5:1.5b.
+  # Publicado en 11435 para no chocar con un Ollama instalado en el equipo
+  # (y para poder lanzar llm/evaluar.py contra el desde fuera).
+  # -------------------------------------------------------------------
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - modelos_ollama:/root/.ollama
+    ports:
+      - "11435:11434"
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  # Instala los modelos en Ollama y termina: crea 'pids-nlu' si hay un
+  # GGUF en llm/modelo/, y si no, descarga el base de respaldo.
+  ollama-init:
+    image: ollama/ollama:latest
+    entrypoint: ["/bin/sh", "/instalar_en_ollama.sh"]
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      OLLAMA_MODELO: ${OLLAMA_MODELO:-pids-nlu}
+      OLLAMA_MODELO_RESPALDO: ${OLLAMA_MODELO_RESPALDO:-qwen2.5:1.5b}
+      CUANTIZAR: ${CUANTIZAR:-}
+    volumes:
+      - ./llm/modelo:/modelo:ro
+      - ./llm/instalar_en_ollama.sh:/instalar_en_ollama.sh:ro
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: "no"
+
+  # -------------------------------------------------------------------
   # API + chatbot.
   # Se conecta como 'pids_app' (rol sin superusuario) para que las
   # politicas RLS se apliquen de verdad.
@@ -67,19 +105,22 @@ services:
     environment:
       DATABASE_URL: postgresql://pids_app:pids_app_pw@db:5432/pids
       REDIS_URL: redis://cache:6379/0
-      JWT_SECRETO: ${JWT_SECRETO:-cambiar-en-produccion}
-      # Motor del chatbot: reglas | ollama | openai | anthropic
-      # 'auto' elige el primero que este configurado (reglas si no hay nada).
-      LLM_PROVEEDOR: ${LLM_PROVEEDOR:-auto}
+      JWT_SECRETO: ${JWT_SECRETO:-}
+      # Motor del chatbot: ollama (por defecto) | reglas | anthropic
+      LLM_PROVEEDOR: ${LLM_PROVEEDOR:-ollama}
+      OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
+      OLLAMA_MODELO: ${OLLAMA_MODELO:-pids-nlu}
+      OLLAMA_MODELO_RESPALDO: ${OLLAMA_MODELO_RESPALDO:-qwen2.5:1.5b}
+      OLLAMA_TIMEOUT: ${OLLAMA_TIMEOUT:-30}
       LLM_API_KEY: ${LLM_API_KEY:-}
-      LLM_MODELO: ${LLM_MODELO:-}
-      LLM_BASE_URL: ${LLM_BASE_URL:-}
+      LLM_MODELO: ${LLM_MODELO:-claude-sonnet-5}
       VENTANA_CUOTA_SEG: ${VENTANA_CUOTA_SEG:-60}
     ports:
       - "8000:8000"
     volumes:
       # Solo para poder lanzar la bateria de pruebas dentro del contenedor
       - ./tests:/srv/tests:ro
+      - ./llm:/srv/llm:ro
     depends_on:
       db:
         condition: service_healthy
@@ -87,51 +128,21 @@ services:
         condition: service_healthy
       ingesta:
         condition: service_completed_successfully
-    restart: unless-stopped
-
-  # -------------------------------------------------------------------
-  # Ollama: modelo de lenguaje abierto ejecutandose en la propia
-  # infraestructura. Sin clave, sin coste y sin que los datos salgan de
-  # la plataforma.
-  #
-  # Va en un PERFIL opcional para no penalizar el arranque normal: solo
-  # se levanta con  docker compose --profile ollama up
-  # -------------------------------------------------------------------
-  ollama:
-    image: ollama/ollama:latest
-    profiles: ["ollama"]
-    volumes:
-      - modelos_ollama:/root/.ollama
-    ports:
-      - "11434:11434"
-    healthcheck:
-      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 20
-      start_period: 30s
-    restart: unless-stopped
-
-  # Descarga el modelo la primera vez y termina. En arranques posteriores
-  # lo encuentra en el volumen y no vuelve a bajarlo.
-  ollama-modelo:
-    image: ollama/ollama:latest
-    profiles: ["ollama"]
-    environment:
-      OLLAMA_HOST: http://ollama:11434
-    entrypoint: ["/bin/sh", "-c", "ollama pull ${OLLAMA_MODELO:-qwen2.5:3b}"]
-    depends_on:
+      # Solo que Ollama haya arrancado, NO que el modelo este descargado:
+      # la API no espera a la descarga, usa las reglas mientras tanto.
       ollama:
-        condition: service_healthy
-    restart: "no"
+        condition: service_started
+    restart: unless-stopped
 
   # -------------------------------------------------------------------
-  # Panel web (chat + graficas). Nginx sirviendo estaticos.
+  # Panel web (chat + graficas). Nginx sirve los estaticos y hace de
+  # proxy de /api hacia la API.
   # -------------------------------------------------------------------
   web:
     image: nginx:alpine
     volumes:
       - ./web:/usr/share/nginx/html:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     ports:
       - "8080:80"
     depends_on:
@@ -139,5 +150,9 @@ services:
     restart: unless-stopped
 
 volumes:
-  datos_db:
+  # El sufijo de version fuerza una base de datos nueva al actualizar desde
+  # una version anterior del proyecto: los scripts de db/init solo se
+  # ejecutan cuando el volumen esta vacio, y el esquema ha cambiado.
+  datos_db_v4:
+  # Modelos de Ollama: se descargan una vez y se conservan entre arranques
   modelos_ollama:

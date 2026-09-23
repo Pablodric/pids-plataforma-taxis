@@ -11,7 +11,7 @@ Movilidad Sur", el modelo no tiene forma de cambiar de empresa.
 import hashlib
 import hmac
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import jwt
 from fastapi import Depends, HTTPException, status
@@ -21,8 +21,17 @@ from app import config, db
 
 esquema_bearer = HTTPBearer(auto_error=False)
 
-# Jerarquia de roles: cada rol incluye los permisos del anterior.
-NIVEL_ROL = {"usuario": 0, "operador": 1, "auditor": 2}
+# Permisos EXPLICITOS por rol, no una jerarquia lineal.
+# La primera version usaba usuario < operador < auditor, y eso daba al
+# auditor el permiso de escritura del operador: podia corregir viajes de
+# cualquier empresa. Quien audita no debe poder alterar lo auditado, asi
+# que el auditor lee todo pero no escribe nada.
+PERMISOS_POR_ROL = {
+    "usuario":  frozenset({"consultar"}),
+    "operador": frozenset({"consultar", "corregir"}),
+    "auditor":  frozenset({"consultar", "ver_global"}),
+}
+PERMISOS = frozenset().union(*PERMISOS_POR_ROL.values())
 
 
 @dataclass
@@ -31,8 +40,10 @@ class Sesion:
     empresa_id: str
     rol: str
 
-    def puede(self, rol_minimo: str) -> bool:
-        return NIVEL_ROL.get(self.rol, -1) >= NIVEL_ROL[rol_minimo]
+    def puede(self, permiso: str) -> bool:
+        if permiso not in PERMISOS:
+            raise ValueError(f"Permiso desconocido: {permiso}")
+        return permiso in PERMISOS_POR_ROL.get(self.rol, frozenset())
 
 
 def verificar_password(password: str, almacenado: str) -> bool:
@@ -71,8 +82,8 @@ def emitir_token(sesion: Sesion) -> tuple[str, int]:
         "sub": sesion.email,
         "empresa_id": sesion.empresa_id,
         "rol": sesion.rol,
-        "exp": datetime.now(timezone.utc) + timedelta(seconds=expira_en),
-        "iat": datetime.now(timezone.utc),
+        "exp": datetime.now(UTC) + timedelta(seconds=expira_en),
+        "iat": datetime.now(UTC),
     }
     token = jwt.encode(carga, config.JWT_SECRETO, algorithm=config.JWT_ALGORITMO)
     return token, expira_en
@@ -95,23 +106,39 @@ def sesion_actual(
             algorithms=[config.JWT_ALGORITMO],
         )
     except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="La sesion ha caducado")
+        raise HTTPException(status_code=401, detail="La sesion ha caducado") from None
     except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Token no valido")
+        raise HTTPException(status_code=401, detail="Token no valido") from None
 
-    return Sesion(
-        email=carga["sub"], empresa_id=carga["empresa_id"], rol=carga["rol"]
-    )
+    try:
+        return Sesion(
+            email=carga["sub"], empresa_id=carga["empresa_id"], rol=carga["rol"]
+        )
+    except KeyError:
+        raise HTTPException(status_code=401, detail="Token no valido") from None
 
 
-def exigir_rol(rol_minimo: str):
-    """Uso: Depends(exigir_rol('operador'))."""
+DESCRIPCION_PERMISO = {
+    "consultar": "consultar datos",
+    "corregir": "registrar correcciones (rol operador)",
+    "ver_global": "ver metricas globales (rol auditor)",
+}
+
+
+def exigir_permiso(permiso: str):
+    """Uso: Depends(exigir_permiso('corregir'))."""
+    if permiso not in PERMISOS:
+        raise ValueError(f"Permiso desconocido: {permiso}")
 
     def dependencia(sesion: Sesion = Depends(sesion_actual)) -> Sesion:
-        if not sesion.puede(rol_minimo):
+        if not sesion.puede(permiso):
+            from app import repositorio  # import diferido: evita el ciclo
+            repositorio.registrar_auditoria(
+                sesion.email, sesion.empresa_id, "permiso_denegado", permiso, False
+            )
             raise HTTPException(
                 status_code=403,
-                detail=f"Se requiere rol '{rol_minimo}' o superior",
+                detail=f"Tu rol ({sesion.rol}) no permite {DESCRIPCION_PERMISO[permiso]}",
             )
         return sesion
 

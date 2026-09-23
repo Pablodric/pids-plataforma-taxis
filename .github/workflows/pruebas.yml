@@ -1,0 +1,92 @@
+# Integracion continua: en cada push y pull request.
+#  - pruebas: lint, las pruebas con cobertura contra Postgres 16 y Redis 7 reales.
+#  - docker:  construye las imagenes, levanta la plataforma con docker compose
+#             y repite las pruebas DENTRO del contenedor de la API.
+name: Pruebas
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      db:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: pids
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d pids"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+      cache:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      PGPASSWORD: postgres
+      DATABASE_URL_ADMIN: postgresql://postgres:postgres@localhost:5432/pids
+      DATABASE_URL: postgresql://pids_app:pids_app_pw@localhost:5432/pids
+      REDIS_URL: redis://localhost:6379/0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: api/requirements.txt
+      - name: Dependencias
+        run: pip install -r api/requirements.txt ruff pytest-cov
+      - name: Lint (ruff)
+        run: ruff check .
+      - name: Esquema de la base de datos
+        run: psql -h localhost -U postgres -d pids -v ON_ERROR_STOP=1 -f db/init/01_esquema.sql
+      - name: Ingesta del CSV
+        run: python ingest/ingesta.py
+      - name: Pruebas + cobertura (minimo 80 %)
+        working-directory: api
+        # DATABASE_URL_ADMIN activa tambien la prueba de manipulacion como
+        # superusuario de la cadena de hashes
+        run: >-
+          PYTHONPATH=. python -m pytest ../tests -v -p no:cacheprovider
+          --cov=app --cov-report=term-missing --cov-fail-under=80
+      - name: Linea base del NLU por reglas (frases de test no vistas)
+        run: python llm/evaluar.py --motor reglas --errores 0
+
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validar docker-compose
+        run: |
+          docker compose config --quiet
+          docker compose -f docker-compose.yml -f docker-compose.gpu.yml config --quiet
+      - name: Construir imagenes
+        run: docker compose build
+      - name: Arrancar la plataforma
+        env:
+          LLM_PROVEEDOR: reglas   # sin descargar el modelo de 1 GB en CI
+        run: |
+          docker compose up -d api web
+          for i in $(seq 1 60); do
+            curl -fsS http://localhost:8080/api/salud && break
+            sleep 3
+          done
+          curl -fsS http://localhost:8080/api/salud
+          curl -fsS http://localhost:8080/ | grep -q "Plataforma de datos de taxis"
+      - name: Pruebas dentro del contenedor de la API
+        run: docker compose exec -T -e PYTHONPATH=/srv api python -m pytest /srv/tests -q -p no:cacheprovider
+      - name: Registros (si algo falla)
+        if: failure()
+        run: docker compose logs --no-color --tail 200
+      - name: Parar
+        if: always()
+        run: docker compose down -v

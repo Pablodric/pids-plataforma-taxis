@@ -1,0 +1,20 @@
+line-length = 110
+target-version = "py312"
+extend-exclude = ["llm/llama.cpp", "web"]
+
+[lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "SIM"]
+ignore = [
+  "E741",   # nombres de una letra en comprensiones cortas
+  "S101",   # assert en pruebas
+  "S105",   # contrasenas de demostracion documentadas (demo1234)
+  "S106",
+  "S311",   # random para generar el dataset sintetico, no criptografia
+  "S608",   # SQL construido solo con listas blancas de columnas (ver repositorio.py)
+  "B008",   # Depends() en los parametros es el patron de FastAPI
+  "SIM105",
+]
+
+[lint.per-file-ignores]
+"tests/*" = ["S", "B017"]
+"llm/*" = ["S603", "S607"]

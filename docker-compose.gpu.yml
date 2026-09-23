@@ -1,0 +1,13 @@
+# Opcional: Ollama con GPU NVIDIA (requiere NVIDIA Container Toolkit).
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up
+# En un Mac es mas rapido instalar Ollama nativo y apuntar la API a el:
+#   OLLAMA_URL=http://host.docker.internal:11434 docker compose up
+services:
+  ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

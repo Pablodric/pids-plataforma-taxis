@@ -28,6 +28,10 @@ La tabla `viajes` queda así como un registro de hechos inmutable, y
 usan los sistemas contables: no se borra un apunte, se hace un asiento de
 corrección.
 
+Que sea de solo-añadir no depende de la disciplina del código: el rol de la
+aplicación no tiene permisos de `UPDATE` ni `DELETE` sobre esas tablas, y un
+disparador rechaza cualquier modificación o borrado incluso al superusuario.
+
 **Dónde:** `db/init/01_esquema.sql`, tablas `viajes` y `correcciones`.
 
 ### Requisito 2 — Actualizar las métricas afectadas sin recalcular todo
@@ -59,6 +63,10 @@ Un matiz de diseño: `valor_original` no es el valor tal y como se ingirió, sin
 dos veces, el historial es una cadena legible (29,50 → 41,84 → 91,84) que
 explica cada salto por separado. El valor tal y como entró sigue disponible
 siempre en la tabla `viajes`, y el panel lo muestra como *importe original*.
+
+Para que la cadena no se rompa con dos correcciones simultáneas del mismo
+viaje, cada corrección toma un bloqueo consultivo de Postgres sobre ese viaje
+(`pg_advisory_xact_lock`) antes de leer el valor vigente.
 
 **Dónde:** `repositorio.registrar_correccion()`.
 
@@ -130,6 +138,14 @@ una no exponga los datos.
   `test_el_detalle_de_viajes_tampoco_se_cruza`, que sigue en la batería como
   prueba de regresión.
 
+- **La FK de `correcciones` es compuesta: `(viaje_id, empresa_id)`.** Con una FK
+  solo sobre `viaje_id`, un rol que puede leer viajes ajenos (el auditor) podía
+  anotar una corrección con su propia empresa sobre el viaje de otra, y la
+  política RLS de inserción no lo veía, porque solo comprueba la empresa de la
+  fila nueva. La FK compuesta lo hace imposible en el motor. Lo cubre la prueba
+  `test_la_bd_impide_corregir_un_viaje_ajeno_aunque_falle_la_api`, que inserta
+  por SQL directo saltándose la API.
+
 ### Requisito 3 — Impedir que un usuario consulte datos de otra empresa
 
 **Decisión:** tres barreras, de fuera hacia dentro.
@@ -146,8 +162,18 @@ que ya es información sobre el cliente ajeno.
 
 ### Requisito 4 — Métricas globales solo para roles autorizados
 
-**Decisión:** tres roles acumulativos — `usuario` < `operador` < `auditor` — con
-el nivel exigido comprobado en tres sitios: al construir el catálogo de
+**Decisión:** tres roles con **permisos explícitos**, no una jerarquía:
+
+| Rol | consultar | corregir | ver_global |
+|---|:-:|:-:|:-:|
+| usuario | ✔ | | |
+| operador | ✔ | ✔ | |
+| auditor | ✔ | | ✔ |
+
+La primera versión usaba una jerarquía lineal (`usuario < operador < auditor`) y
+eso daba al auditor el permiso de escritura del operador: podía corregir viajes
+de cualquier empresa. Quien audita no debe poder alterar lo auditado. El
+permiso exigido se comprueba en tres sitios: al construir el catálogo de
 herramientas, en la dependencia de FastAPI y en la propia política RLS, que
 concede visión global cuando `app.rol` es `auditor`.
 
@@ -160,6 +186,15 @@ Que sea por empresa es lo que cumple el requisito: si fuera por usuario, una
 empresa con cien cuentas podría agotar la plataforma sin que ninguno de sus
 usuarios pasara su límite individual. Las operaciones de escritura cuestan el
 doble que las de lectura, porque disparan el recálculo de un cubo.
+
+El consumo se comprueba y se anota en un único script Lua, atómico en Redis.
+La versión anterior leía el contador y escribía en dos pasos, y con peticiones
+simultáneas (o varias réplicas de la API) se podía superar el límite.
+
+Un detalle de usabilidad que también es de recursos: el panel web pide todo lo
+que pinta en **una** petición (`/datos/panel`), que cuesta una unidad. Antes
+hacía cinco por refresco y un operador que corregía tres viajes seguidos se
+quedaba bloqueado por su propia cuota.
 
 **Dónde:** `api/app/cuotas.py`.
 

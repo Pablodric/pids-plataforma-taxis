@@ -1,6 +1,6 @@
 # Casos de uso del agente conversacional
 
-Nueve casos de uso, todos contra los datos reales almacenados y procesados en la
+Once casos de uso, todos contra los datos reales almacenados y procesados en la
 Parte 2. Los marcados con **E6** o **E7** existen específicamente por la
 restricción del equipo.
 
@@ -10,11 +10,13 @@ restricción del equipo.
 
 **Actor:** cualquier usuario autenticado.
 **Ejemplos:** *"¿cuántos viajes tenemos?"*, *"tarifa media en Manhattan"*,
-*"¿cuánto facturamos el 1 de enero?"*
+*"¿cuánto facturamos el 1 de enero?"*, y a continuación *"¿y en Brooklyn?"*
 
-**Flujo:** el NLU extrae la intención y las entidades (distrito, fecha) → la
-herramienta `resumen_metricas` consulta el cubo agregado con el contexto de
-empresa → la respuesta incluye el aviso de correcciones si procede.
+**Flujo:** el NLU extrae la intención y las entidades (distrito, fecha en
+lenguaje natural) → la herramienta `resumen_metricas` consulta el cubo agregado
+con el contexto de empresa → la respuesta incluye el aviso de correcciones si
+procede. Una pregunta de seguimiento reutiliza la consulta anterior cambiando
+solo el filtro nuevo. Importes en dólares (los datos son de Nueva York).
 
 **Datos:** tabla `metricas_diarias`.
 
@@ -59,12 +61,19 @@ etiquetas legibles, y añade la propina media de cada método.
 **Ejemplo:** *"el viaje 412 tenía mal la tarifa, eran 23,50"*
 
 **Flujo:**
-1. Se comprueba que el rol es operador (si no, la herramienta ni se ofrece).
-2. Se lee el valor vigente del viaje — el RLS garantiza que es de su empresa.
-3. Se inserta el evento de corrección con valor original, nuevo, motivo, autor
-   y momento.
-4. El disparador recalcula **solo** el cubo (empresa, fecha, distrito) afectado.
-5. El chatbot confirma el cambio y el panel actualiza KPI y gráficas.
+1. Se comprueba que el rol es operador (si no, la herramienta ni se ofrece, y
+   el bot explica que su rol solo permite consultar).
+2. El NLU extrae viaje, campo (*tarifa* → importe total), valor (*23,50*) y
+   motivo si lo hay.
+3. Se **previsualiza**: se lee el valor vigente del viaje — el RLS garantiza
+   que es de su empresa — y se valida el nuevo valor. El bot resume el cambio
+   y pide confirmación. Todavía no se ha escrito nada.
+4. Con *"sí"*, se inserta el evento de corrección con valor anterior, nuevo,
+   motivo, autor y momento.
+5. El disparador recalcula **solo** el cubo (empresa, fecha, distrito) afectado.
+6. El chatbot confirma el cambio y el panel actualiza KPI y gráficas.
+
+Si falta un dato (qué campo, qué valor), el bot lo pregunta en vez de adivinar.
 
 ---
 
@@ -73,9 +82,11 @@ etiquetas legibles, y añade la propina media de cada método.
 **Actor:** operador.
 **Ejemplo:** *"cancela el viaje 88, el cliente anuló el servicio"*
 
-**Flujo:** igual que CU-5, pero el evento es de tipo cancelación. El viaje deja
-de contar en las métricas y **permanece en el historial**. Intentar cancelar dos
-veces el mismo viaje se rechaza.
+**Flujo:** igual que CU-5 (con confirmación), pero el evento es de tipo
+cancelación y el motivo es lo que sigue a la coma. El viaje deja de contar en
+las métricas y **permanece en el historial**. Intentar cancelar dos veces el
+mismo viaje se rechaza, también si las dos peticiones llegan a la vez (índice
+único en la base de datos).
 
 ---
 
@@ -116,7 +127,33 @@ parámetro de empresa, y aunque lo aceptara, el RLS filtraría la consulta.
 
 **Flujo:** para un usuario normal la herramienta no existe en el catálogo y la
 ruta HTTP responde `403`. Para el auditor, la política RLS amplía la visibilidad
-y devuelve el desglose por empresa.
+y devuelve el desglose por empresa. El auditor es de **solo lectura**: si pide
+corregir algo, el bot le explica que no puede, y la API y la base de datos lo
+impiden aunque lo intentara por otra vía.
+
+---
+
+## CU-10. Ficha de un viaje **(E6)**
+
+**Actor:** cualquier usuario autenticado.
+**Ejemplos:** *"detalle del viaje 411"*, *"¿por qué ha cambiado el viaje 411?"*
+
+**Flujo:** la herramienta `detalle_viaje` devuelve origen y destino, cada campo
+corregible con su valor **tal y como se ingirió** y su valor **vigente**, si
+está cancelado, y la cadena completa de cambios. Es la respuesta más directa a
+la última frase de E6 cuando la pregunta es sobre un viaje concreto. Un viaje de
+otra empresa responde igual que uno inexistente.
+
+---
+
+## CU-11. Ayuda y conversación
+
+**Actor:** cualquier usuario autenticado.
+**Ejemplos:** *"hola"*, *"¿qué puedes hacer?"*, un mensaje que no entiende.
+
+**Flujo:** el bot responde con ejemplos adaptados al rol (el operador ve cómo
+corregir con un número de viaje real de su empresa; el auditor, cómo comparar
+empresas) en lugar de devolver una métrica cualquiera.
 
 ---
 
@@ -133,3 +170,5 @@ y devuelve el desglose por empresa.
 | CU-7 Explicar un cambio | Log de correcciones | E6 |
 | CU-8 Acceso denegado | RLS | E7 |
 | CU-9 Métricas globales | Cubo agregado, rol auditor | E7 |
+| CU-10 Ficha de un viaje | Vista vigente + log de correcciones | E6 |
+| CU-11 Ayuda | — | — |

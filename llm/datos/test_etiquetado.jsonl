@@ -1,0 +1,556 @@
+{"texto": "a ver, demanda según la hora", "esperado": {"intencion": "viajes_por_hora", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "muy buensa", "esperado": {"intencion": "saludo", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "ponme las empresas una al lado de otra", "esperado": {"intencion": "metricas_globales", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "dame los viajes más recientes por favor", "esperado": {"intencion": "listar_viajes", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "porfa, ¿cuál es el momento del día con más carreras?", "esperado": {"intencion": "viajes_por_hora", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "necesito arreglar el ipmorte total del viaje 82", "esperado": {"intencion": "registrar_correccion", "viaje_id": 82, "campo": "importe_total", "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "el viaje 913 se registró con la propina mal, es 1 $", "esperado": {"intencion": "registrar_correccion", "viaje_id": 913, "campo": "propina", "valor": 1.0, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "igaul pero el 18 de diciembre de 2019", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "2019-12-18", "motivo": null}}
+{"texto": "perdona, igual pero el 14/07/2020 por favor", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "2020-07-14", "motivo": null}}
+{"texto": "donde recogemos mas clientes?", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "pon músiac gracias", "esperado": {"intencion": "fuera_de_dominio", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "porfa, necesito saber lo que ingresamos el dia 11 de octubre", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "--10-11", "motivo": null}}
+{"texto": "a ver, ¿por qué no me cuadra el total de ayer?", "esperado": {"intencion": "historial_correcciones", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "dale gracias", "esperado": {"intencion": "afirmar", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "precio medio de una carrera en staten", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": "Staten Island", "fecha": null, "motivo": null}}
+{"texto": "oye, quiero anular el servicio 774 porque fallo de la aplicacion", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 774, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "fallo de la aplicacion"}}
+{"texto": "necesito arreglar las personas del viaje 813", "esperado": {"intencion": "registrar_correccion", "viaje_id": 813, "campo": "pasajeros", "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "cuántas carreras se hicieron en queens?", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": "Queens", "fecha": null, "motivo": null}}
+{"texto": "y la facturación de el día 20 de mayo?", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "--05-20", "motivo": null}}
+{"texto": "comparame los distritos porfa", "esperado": {"intencion": "metricas_por_borough", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "a ver, rectifica el trayecto 908: distancia 7.30 ya que el cliente anulo el servicio", "esperado": {"intencion": "registrar_correccion", "viaje_id": 908, "campo": "distancia", "valor": 7.3, "borough": null, "fecha": null, "motivo": "el cliente anulo el servicio"}}
+{"texto": "hola, necesito arreglar la distancia del viaje 126", "esperado": {"intencion": "registrar_correccion", "viaje_id": 126, "campo": "distancia", "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿cuántas carreras se hicieron en Bronx? porfa", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": "Bronx", "fecha": null, "motivo": null}}
+{"texto": "a ver, por qué no me cuadar el total de ayer?", "esperado": {"intencion": "historial_correcciones", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿y la facturacion de el 1 de enero de 2020?", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "2020-01-01", "motivo": null}}
+{"texto": "igual pero el dia 1 de noviembre", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "--11-01", "motivo": null}}
+{"texto": "barrios más activos de Queens", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": "Queens", "fecha": null, "motivo": null}}
+{"texto": "demanda segun la hora porfa", "esperado": {"intencion": "viajes_por_hora", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "perdona, mil gracias", "esperado": {"intencion": "gracias", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "hola, ponme las empresas una al lado de otra", "esperado": {"intencion": "metricas_globales", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "oye, repite para Staten Island", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": "Staten Island", "fecha": null, "motivo": null}}
+{"texto": "¿cual es el momento del dia con mas carreras?", "esperado": {"intencion": "viajes_por_hora", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "que distrito cnocentra mas viajes?", "esperado": {"intencion": "metricas_por_borough", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "barrios mas activos de Queens", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": "Queens", "fecha": null, "motivo": null}}
+{"texto": "cómo está el viaje 88?", "esperado": {"intencion": "detalle_viaje", "viaje_id": 88, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿cuántas carreras se hicieron en EWR?", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": "EWR", "fecha": null, "motivo": null}}
+{"texto": "quiero anular el servicio 832 porque el cliente pago menos", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 832, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "el cliente pago menos"}}
+{"texto": "dónde recogemos más clientes?", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "porfa, el viaje 312 se registró con la propina mal, es 1,83 $", "esperado": {"intencion": "registrar_correccion", "viaje_id": 312, "campo": "propina", "valor": 1.83, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "el viaje 736 no se hizo, cancélalo", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 736, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "hay que cambiar la propina del serviico 245, ponle 15", "esperado": {"intencion": "registrar_correccion", "viaje_id": 245, "campo": "propina", "valor": 15.0, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "reipte para manhattan", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": "Manhattan", "fecha": null, "motivo": null}}
+{"texto": "¿por que no me cuadra el total de ayer? porfa", "esperado": {"intencion": "historial_correcciones", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "perdona, rectifica el traeycto 109: tarifa 6 ya que prueba del sistema", "esperado": {"intencion": "registrar_correccion", "viaje_id": 109, "campo": "importe_total", "valor": 6.0, "borough": null, "fecha": null, "motivo": "prueba del sistema"}}
+{"texto": "rectifica el trayecto 66: propina 4 $ ya que servicio no realizado gracias", "esperado": {"intencion": "registrar_correccion", "viaje_id": 66, "campo": "propina", "valor": 4.0, "borough": null, "fecha": null, "motivo": "servicio no realizado"}}
+{"texto": "barrios mas activos de el Bronx", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": "Bronx", "fecha": null, "motivo": null}}
+{"texto": "hola, no sé qué preguntarte", "esperado": {"intencion": "ayuda", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "a ver, ¿se paga más en efectivo o con tarjeta?", "esperado": {"intencion": "reparto_pagos", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿que tal en manhattan?", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": "Manhattan", "fecha": null, "motivo": null}}
+{"texto": "porfa, consulta el trayecto 514", "esperado": {"intencion": "detalle_viaje", "viaje_id": 514, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "porfa, se paga mas en efectivo o con tarjeta?", "esperado": {"intencion": "reparto_pagos", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "porfa, te lo agradezco gracias", "esperado": {"intencion": "gracias", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "oye, demanda según la hora", "esperado": {"intencion": "viajes_por_hora", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "en el viaje 634 la propina correcto son 1 $", "esperado": {"intencion": "registrar_correccion", "viaje_id": 634, "campo": "propina", "valor": 1.0, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "quiero anular el servicio 975 porque viaje duplicado por favor", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 975, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "viaje duplicado"}}
+{"texto": "rectifica el trayecto 294: pasajeros 4 ya que la propina era en efectivo", "esperado": {"intencion": "registrar_correccion", "viaje_id": 294, "campo": "pasajeros", "valor": 4.0, "borough": null, "fecha": null, "motivo": "la propina era en efectivo"}}
+{"texto": "que cambios tiene el viaje 74?", "esperado": {"intencion": "detalle_viaje", "viaje_id": 74, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "demanda según la hora", "esperado": {"intencion": "viajes_por_hora", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿qué zonas de origen dominan el 2019-12-18?", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "2019-12-18", "motivo": null}}
+{"texto": "oye, te lo argadezco", "esperado": {"intencion": "gracias", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "espera, no porfa", "esperado": {"intencion": "negar", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "perdona, estadísticas generales gracias", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "por qué no me cuadra el total de ayer?", "esperado": {"intencion": "historial_correcciones", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "hay que cambiar la propina del servicio 259, ponle 2,18", "esperado": {"intencion": "registrar_correccion", "viaje_id": 259, "campo": "propina", "valor": 2.18, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "el viaje 938 no se hizo, cancélalo", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 938, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "igual pero en nochevieja", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "--12-31", "motivo": null}}
+{"texto": "rectifica el trayecto 664: prpoina 2,14 ya que viaje duplicado", "esperado": {"intencion": "registrar_correccion", "viaje_id": 664, "campo": "propina", "valor": 2.14, "borough": null, "fecha": null, "motivo": "viaje duplicado"}}
+{"texto": "a ver, ¿qué método de pago deja más propina? por favor", "esperado": {"intencion": "reparto_pagos", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "dame los viajes mas recientes", "esperado": {"intencion": "listar_viajes", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿y la facturacion de el dia 31 de diciembre?", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "--12-31", "motivo": null}}
+{"texto": "necesito arreglar la distancia del viaje 344", "esperado": {"intencion": "registrar_correccion", "viaje_id": 344, "campo": "distancia", "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "en el viaje 976 el cobro correcto son 58,52 $", "esperado": {"intencion": "registrar_correccion", "viaje_id": 976, "campo": "importe_total", "valor": 58.52, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "a ver, como esta el viaje 64697?", "esperado": {"intencion": "detalle_viaje", "viaje_id": 64697, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "te lo agradezco", "esperado": {"intencion": "gracias", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "hay que cambiar el cobro del servicio 363, ponle $44.53", "esperado": {"intencion": "registrar_correccion", "viaje_id": 363, "campo": "importe_total", "valor": 44.53, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "que distrito concentra mas viajes?", "esperado": {"intencion": "metricas_por_borough", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "necesito saber lo que ingresamos el día 27 de junio", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "--06-27", "motivo": null}}
+{"texto": "¿qué ditsrito concentra más viajes?", "esperado": {"intencion": "metricas_por_borough", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "el viaje 672 se registró con las millas mal, es 23 por favor", "esperado": {"intencion": "registrar_correccion", "viaje_id": 672, "campo": "distancia", "valor": 23.0, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "a ver, cancealr trayecto 27, la propina era en efectivo por favor", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 27, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "la propina era en efectivo"}}
+{"texto": "qué distrito concentra más viajes? porfa", "esperado": {"intencion": "metricas_por_borough", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "porfa, ¿qué distrito concentra más viajes?", "esperado": {"intencion": "metricas_por_borough", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿que distrito concentra mas viajes?", "esperado": {"intencion": "metricas_por_borough", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "oye, demanda según la hora por favor", "esperado": {"intencion": "viajes_por_hora", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "se paga más en efectivo o con tarjeta?", "esperado": {"intencion": "reparto_pagos", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "precio medio de una carrera en Queens", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": "Queens", "fecha": null, "motivo": null}}
+{"texto": "oye, donde recogemos mas clientes?", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "barrios más activos de queens", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": "Queens", "fecha": null, "motivo": null}}
+{"texto": "a ver, igual pero el 15 de diciembre por favor", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "--12-15", "motivo": null}}
+{"texto": "rectifica el trayecto 163: distancia 0,90 millas ya que viaje duplicado", "esperado": {"intencion": "registrar_correccion", "viaje_id": 163, "campo": "distancia", "valor": 0.9, "borough": null, "fecha": null, "motivo": "viaje duplicado"}}
+{"texto": "hay que cambiar la propnia del servicio 611, ponle 7,39 $", "esperado": {"intencion": "registrar_correccion", "viaje_id": 611, "campo": "propina", "valor": 7.39, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿que zonas de origen dominan el dia 1 de enero?", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "--01-01", "motivo": null}}
+{"texto": "¿que tal en Bronx?", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": "Bronx", "fecha": null, "motivo": null}}
+{"texto": "¿se paga mas en efectivo o con tarjeta?", "esperado": {"intencion": "reparto_pagos", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "hay que cambiar las personas del servicio 948, ponle 4", "esperado": {"intencion": "registrar_correccion", "viaje_id": 948, "campo": "pasajeros", "valor": 4.0, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "qué tal en the Bronx?", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": "Bronx", "fecha": null, "motivo": null}}
+{"texto": "¿por qué no me cuadra el total de ayer?", "esperado": {"intencion": "historial_correcciones", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "barrios mas activos de manhattan", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": "Manhattan", "fecha": null, "motivo": null}}
+{"texto": "en el viaje 275 la propina correcto son 1", "esperado": {"intencion": "registrar_correccion", "viaje_id": 275, "campo": "propina", "valor": 1.0, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "consulta el taryecto 43", "esperado": {"intencion": "detalle_viaje", "viaje_id": 43, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "necesito arreglar el cobro del viaje 236", "esperado": {"intencion": "registrar_correccion", "viaje_id": 236, "campo": "importe_total", "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "hola, claro que sí", "esperado": {"intencion": "afirmar", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "rectifica el trayecto 280: prceio 39.55 ya que reclamacion del cliente", "esperado": {"intencion": "registrar_correccion", "viaje_id": 280, "campo": "importe_total", "valor": 39.55, "borough": null, "fecha": null, "motivo": "reclamacion del cliente"}}
+{"texto": "pon música gracias", "esperado": {"intencion": "fuera_de_dominio", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "a ver, quiero ver el servicio 245", "esperado": {"intencion": "detalle_viaje", "viaje_id": 245, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "necesito arreglar el numero de pasajeros del viaje 374", "esperado": {"intencion": "registrar_correccion", "viaje_id": 374, "campo": "pasajeros", "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "no se que preguntarte", "esperado": {"intencion": "ayuda", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "estadisticas generales", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "a ver, viajes agrupados por borough por favor", "esperado": {"intencion": "metricas_por_borough", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "desglose por meido de pago", "esperado": {"intencion": "reparto_pagos", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "oye, repite para Bronx", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": "Bronx", "fecha": null, "motivo": null}}
+{"texto": "a ver, consulta el trayecto 880", "esperado": {"intencion": "detalle_viaje", "viaje_id": 880, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "perdona, resumen de todas las compañías", "esperado": {"intencion": "metricas_globales", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "a qué se debe la diferencia en las cifras?", "esperado": {"intencion": "historial_correcciones", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "totales de la plataforma entera", "esperado": {"intencion": "metricas_globales", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "muy buenas", "esperado": {"intencion": "saludo", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "hola, espera, no", "esperado": {"intencion": "negar", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "oye, necesito arreglar el cobro del viaje 30", "esperado": {"intencion": "registrar_correccion", "viaje_id": 30, "campo": "importe_total", "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "compárame los dsitritos", "esperado": {"intencion": "metricas_por_borough", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "perdona, ¿qué zonas de origen dominan el día de año nuevo?", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "--01-01", "motivo": null}}
+{"texto": "quiero anular el servicio 71225 porque viaje duplicado", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 71225, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "viaje duplicado"}}
+{"texto": "a ver, demanda segun la hora", "esperado": {"intencion": "viajes_por_hora", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿qué zonas de origen dominan el 2020-05-24?", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "2020-05-24", "motivo": null}}
+{"texto": "quién eres porfa", "esperado": {"intencion": "fuera_de_dominio", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿qué tal en Brooklyn?", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": "Brooklyn", "fecha": null, "motivo": null}}
+{"texto": "quieor anular el servicio 838 porque el pasajero no se presento", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 838, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "el pasajero no se presento"}}
+{"texto": "¿se paga más en efectivo o con tarjeta?", "esperado": {"intencion": "reparto_pagos", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "porfa, cancelra trayecto 19860, error del conductor al teclear", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 19860, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "error del conductor al teclear"}}
+{"texto": "perdona, rectifica el trayecto 84967: pasajeros 3 ya que el conductor no llego a recogerlo", "esperado": {"intencion": "registrar_correccion", "viaje_id": 84967, "campo": "pasajeros", "valor": 3.0, "borough": null, "fecha": null, "motivo": "el conductor no llego a recogerlo"}}
+{"texto": "hay que cambiar las personas del servicio 309, ponle 2", "esperado": {"intencion": "registrar_correccion", "viaje_id": 309, "campo": "pasajeros", "valor": 2.0, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "cancelar trayecto 655, lo confirmo el proveedor por correo", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 655, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "lo confirmo el proveedor por correo"}}
+{"texto": "¿cuántas carreras se hicieron en bronx?", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": "Bronx", "fecha": null, "motivo": null}}
+{"texto": "porfa, ¿me explicas qué haces? gracias", "esperado": {"intencion": "ayuda", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "el viaje 215 se registro con la propina mal, es 1.94", "esperado": {"intencion": "registrar_correccion", "viaje_id": 215, "campo": "propina", "valor": 1.94, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "repite para brooklyn porfa", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": "Brooklyn", "fecha": null, "motivo": null}}
+{"texto": "el viaje 670 se registró con la propina mal, es 1,55", "esperado": {"intencion": "registrar_correccion", "viaje_id": 670, "campo": "propina", "valor": 1.55, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "perdona, quién eres", "esperado": {"intencion": "fuera_de_dominio", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "en el viaje 98292 la propina correcto son 13,84 $", "esperado": {"intencion": "registrar_correccion", "viaje_id": 98292, "campo": "propina", "valor": 13.84, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "porfa, precio medio de una carrera en Bronx", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": "Bronx", "fecha": null, "motivo": null}}
+{"texto": "perdona, registro de cambios", "esperado": {"intencion": "historial_correcciones", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "hay que cambiar la distancia del servicio 940, ponle 20,60", "esperado": {"intencion": "registrar_correccion", "viaje_id": 940, "campo": "distancia", "valor": 20.6, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "perdona, ¿qué distrito concentra más viajes?", "esperado": {"intencion": "metricas_por_borough", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "si, confirmado", "esperado": {"intencion": "afirmar", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "repite para brooklyn", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": "Brooklyn", "fecha": null, "motivo": null}}
+{"texto": "¿qué zonas de origen dominan el día de nochevieja?", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "--12-31", "motivo": null}}
+{"texto": "a ver, pon música", "esperado": {"intencion": "fuera_de_dominio", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "a ver, necesito arreglar la tarifa del viaje 672", "esperado": {"intencion": "registrar_correccion", "viaje_id": 672, "campo": "importe_total", "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "qué tal en Brooklyn?", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": "Brooklyn", "fecha": null, "motivo": null}}
+{"texto": "viajes agrupados por boroguh", "esperado": {"intencion": "metricas_por_borough", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿qué tal en manhattan?", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": "Manhattan", "fecha": null, "motivo": null}}
+{"texto": "oye, estadisticas generales", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "quiero anular el servicio 47690 porque reclamacion del cliente", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 47690, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "reclamacion del cliente"}}
+{"texto": "porfa, qué sabes hacer?", "esperado": {"intencion": "ayuda", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "en el viaje 40 el recorrido correcto son 17.30", "esperado": {"intencion": "registrar_correccion", "viaje_id": 40, "campo": "distancia", "valor": 17.3, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "porfa, necesito saber lo que ingresamos el 10/02/2020 porfa", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "2020-02-10", "motivo": null}}
+{"texto": "necesito arreglar el recorrido del vijae 42075", "esperado": {"intencion": "registrar_correccion", "viaje_id": 42075, "campo": "distancia", "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "se ha modificado algun dato?", "esperado": {"intencion": "historial_correcciones", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "el viaje 102 se regisrto con la tarifa mal, es 9 dolares", "esperado": {"intencion": "registrar_correccion", "viaje_id": 102, "campo": "importe_total", "valor": 9.0, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "igual pero el 24/11/2020", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "2020-11-24", "motivo": null}}
+{"texto": "quiero anular el servicio 948 porque viaje duplicado", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 948, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "viaje duplicado"}}
+{"texto": "calro que sí", "esperado": {"intencion": "afirmar", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "a ver, cuantas carreras se hicieron en brooklyn?", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": "Brooklyn", "fecha": null, "motivo": null}}
+{"texto": "mil gracias", "esperado": {"intencion": "gracias", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "quiero ver los últimos servicios registrados", "esperado": {"intencion": "listar_viajes", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "necseito saber lo que ingresamos en nochevieja", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "--12-31", "motivo": null}}
+{"texto": "y la facturación de el 1 de enero de 2020?", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "2020-01-01", "motivo": null}}
+{"texto": "perdona, totales de la plataforma entera", "esperado": {"intencion": "metricas_globales", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "en el viaje 82 el número de pasajeros correcto son cuatro", "esperado": {"intencion": "registrar_correccion", "viaje_id": 82, "campo": "pasajeros", "valor": 4.0, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "hola, se paga mas en efectivo o con tarjeta?", "esperado": {"intencion": "reparto_pagos", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "hola, mil gracias", "esperado": {"intencion": "gracias", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "oye, ponme las empresas una al lado de otra", "esperado": {"intencion": "metricas_globales", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "holaa", "esperado": {"intencion": "saludo", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "quiero anular el servicio 255 porque error de redondeo", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 255, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "error de redondeo"}}
+{"texto": "qué tal en queens?", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": "Queens", "fecha": null, "motivo": null}}
+{"texto": "necesito arreglar las personas del viaje 712", "esperado": {"intencion": "registrar_correccion", "viaje_id": 712, "campo": "pasajeros", "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "porfa, totales de la plataforma entera", "esperado": {"intencion": "metricas_globales", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "oye, mil gracias porfa", "esperado": {"intencion": "gracias", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "necesito arreglar la propina del viaje 645", "esperado": {"intencion": "registrar_correccion", "viaje_id": 645, "campo": "propina", "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "muy bueans", "esperado": {"intencion": "saludo", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "oye, necesito arreglar el recorrido del viaje 79729", "esperado": {"intencion": "registrar_correccion", "viaje_id": 79729, "campo": "distancia", "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "registro de cambios por favor", "esperado": {"intencion": "historial_correcciones", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "necesito arreglar las personas del viaje 955 porfa", "esperado": {"intencion": "registrar_correccion", "viaje_id": 955, "campo": "pasajeros", "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "perdona, rectifica el trayecto 267: pasajeros 2 ya que prueba del sistema", "esperado": {"intencion": "registrar_correccion", "viaje_id": 267, "campo": "pasajeros", "valor": 2.0, "borough": null, "fecha": null, "motivo": "prueba del sistema"}}
+{"texto": "¿qué distrito concentra más viajes?", "esperado": {"intencion": "metricas_por_borough", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "a ver, el viaje 790 se rgeistro con los pasajeros mal, es 3", "esperado": {"intencion": "registrar_correccion", "viaje_id": 790, "campo": "pasajeros", "valor": 3.0, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "cual es el momento del dia con mas carreras?", "esperado": {"intencion": "viajes_por_hora", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "hola, dame una reecta de paella", "esperado": {"intencion": "fuera_de_dominio", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "saludos", "esperado": {"intencion": "saludo", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "qué distrito concentra más viajes?", "esperado": {"intencion": "metricas_por_borough", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "si, conifrmado", "esperado": {"intencion": "afirmar", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "quiero anular el servicio 932 porque revision mensual del proveedor", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 932, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "revision mensual del proveedor"}}
+{"texto": "cómo está el viaje 547?", "esperado": {"intencion": "detalle_viaje", "viaje_id": 547, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "porfa, igual pero el 22 de junio", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "--06-22", "motivo": null}}
+{"texto": "porfa, me aburro", "esperado": {"intencion": "fuera_de_dominio", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "hay que cambiar la propina del servicio 707, ponle 7,20", "esperado": {"intencion": "registrar_correccion", "viaje_id": 707, "campo": "propina", "valor": 7.2, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿qué cambios tiene el viaje 103?", "esperado": {"intencion": "detalle_viaje", "viaje_id": 103, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "dame los viajse mas recientes", "esperado": {"intencion": "listar_viajes", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "en el viaje 514 el numero de pasajeros correcto son cinco", "esperado": {"intencion": "registrar_correccion", "viaje_id": 514, "campo": "pasajeros", "valor": 5.0, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "oye, totales de la platafomra entera", "esperado": {"intencion": "metricas_globales", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿por que no me cuadra el total de ayer?", "esperado": {"intencion": "historial_correcciones", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿qué tal en EWR?", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": "EWR", "fecha": null, "motivo": null}}
+{"texto": "a ver, holaa", "esperado": {"intencion": "saludo", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "perdona, se paga más en efectivo o con tarjeta?", "esperado": {"intencion": "reparto_pagos", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "por qué no me cuadra el total de ayer? gracias", "esperado": {"intencion": "historial_correcciones", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿que sabes hacer? por favor", "esperado": {"intencion": "ayuda", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "litsa de zonas ordenada por viajes", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "hay que cambiar el importe del servicio 908, ponle 140,48 $", "esperado": {"intencion": "registrar_correccion", "viaje_id": 908, "campo": "importe_total", "valor": 140.48, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "a ver, ponme las empresas una al lado de otra porfa", "esperado": {"intencion": "metricas_globales", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "oye, ¿qué zonas de origen dominan el 31 de diciembre?", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "--12-31", "motivo": null}}
+{"texto": "quiero anular el servicio 384 porque error de redondeo", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 384, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "error de redondeo"}}
+{"texto": "consulta el trayecto 92", "esperado": {"intencion": "detalle_viaje", "viaje_id": 92, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "a ver, el viaje 350 se registro con la distancia mal, es 12", "esperado": {"intencion": "registrar_correccion", "viaje_id": 350, "campo": "distancia", "valor": 12.0, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "el viaje 142 no se hizo, cancelalo", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 142, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "repite para el Bronx", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": "Bronx", "fecha": null, "motivo": null}}
+{"texto": "porfa, dale", "esperado": {"intencion": "afirmar", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿se ha modificado algún dato?", "esperado": {"intencion": "historial_correcciones", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "qué tal en brooklyn? por favor", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": "Brooklyn", "fecha": null, "motivo": null}}
+{"texto": "oye, quiero anular el servicio 92 porque reclamacion del cliente", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 92, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "reclamacion del cliente"}}
+{"texto": "igual pero el 2020-10-06", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "2020-10-06", "motivo": null}}
+{"texto": "en el viaje 94237 la propina correcto son 14,27 porfa", "esperado": {"intencion": "registrar_correccion", "viaje_id": 94237, "campo": "propina", "valor": 14.27, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "cancelar trayecto 242, error del conductor al teclear", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 242, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "error del conductor al teclear"}}
+{"texto": "perdona, y la facturacion de el 9 de abril de 2021?", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "2021-04-09", "motivo": null}}
+{"texto": "rectifica el trayecto 32195: total 54 dólares ya que error del conductor al teclear", "esperado": {"intencion": "registrar_correccion", "viaje_id": 32195, "campo": "importe_total", "valor": 54.0, "borough": null, "fecha": null, "motivo": "error del conductor al teclear"}}
+{"texto": "mil gracias gracias", "esperado": {"intencion": "gracias", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "hola, ¿cuál es el momento del día con más carreras? porfa", "esperado": {"intencion": "viajes_por_hora", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "en el viaje 60 el cobro correcto son 122,14", "esperado": {"intencion": "registrar_correccion", "viaje_id": 60, "campo": "importe_total", "valor": 122.14, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "oye, ¿que metodo de pago deja mas propina?", "esperado": {"intencion": "reparto_pagos", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "quiero anular el servicio 623 porque servicio no realizado", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 623, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "servicio no realizado"}}
+{"texto": "el viaje 90119 no se hizo, cancélalo porfa", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 90119, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "porfa, estadísticas generales", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "oye, te lo agradezco", "esperado": {"intencion": "gracias", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "que volumen de viajes llevamos?", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "el viaje 218 se registró con el númeor de pasajeros mal, es 3", "esperado": {"intencion": "registrar_correccion", "viaje_id": 218, "campo": "pasajeros", "valor": 3.0, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿que cambios tiene el viaje 80?", "esperado": {"intencion": "detalle_viaje", "viaje_id": 80, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "cómo está el viaje 505?", "esperado": {"intencion": "detalle_viaje", "viaje_id": 505, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿qué zonas de origen dominan el 12 de enero?", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "--01-12", "motivo": null}}
+{"texto": "consulta el traeycto 306", "esperado": {"intencion": "detalle_viaje", "viaje_id": 306, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "a ver, qué zonas de origen dominan en nochevieja?", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "--12-31", "motivo": null}}
+{"texto": "oye, el viaje 833 no se hizo, cancélalo", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 833, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "a que horas se concentran los servicios?", "esperado": {"intencion": "viajes_por_hora", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "perdona, viajes agrupados por borough", "esperado": {"intencion": "metricas_por_borough", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "hola, en el viaje 30682 la propina correcto son 12", "esperado": {"intencion": "registrar_correccion", "viaje_id": 30682, "campo": "propina", "valor": 12.0, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "barrios mas activos de EWR", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": "EWR", "fecha": null, "motivo": null}}
+{"texto": "porfa, desglose por medio de pago", "esperado": {"intencion": "reparto_pagos", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "espera, no por favor", "esperado": {"intencion": "negar", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "hola, pon música", "esperado": {"intencion": "fuera_de_dominio", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "repite para ewr", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": "EWR", "fecha": null, "motivo": null}}
+{"texto": "en el viaje 679 la propina correcto son 4 dolares", "esperado": {"intencion": "registrar_correccion", "viaje_id": 679, "campo": "propina", "valor": 4.0, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿qué cambios tiene el viaje 46812?", "esperado": {"intencion": "detalle_viaje", "viaje_id": 46812, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "necesito arreglar las personas del viaje 855", "esperado": {"intencion": "registrar_correccion", "viaje_id": 855, "campo": "pasajeros", "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿a que se debe la diferencia en las cifras? por favor", "esperado": {"intencion": "historial_correcciones", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "necesito saber lo que ingresamos el 9 de enero", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "--01-09", "motivo": null}}
+{"texto": "claro que si", "esperado": {"intencion": "afirmar", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "cancelar trayecto 586, error del conductor al teclear", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 586, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "error del conductor al teclear"}}
+{"texto": "hola, viajes agrupados por borough", "esperado": {"intencion": "metricas_por_borough", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "en el viaje 632 la distancia correcto son 2,98 millas", "esperado": {"intencion": "registrar_correccion", "viaje_id": 632, "campo": "distancia", "valor": 2.98, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "el viaje 416 no se hizo, cancéllao", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 416, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "perdona, qué sabes hacer?", "esperado": {"intencion": "ayuda", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "porfa, resumen de toads las compañías", "esperado": {"intencion": "metricas_globales", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "porfa, quiero ver los últimos servicios registrados", "esperado": {"intencion": "listar_viajes", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "hay que cambiar el importe del servicio 719, ponle 66,06 $ por favor", "esperado": {"intencion": "registrar_correccion", "viaje_id": 719, "campo": "importe_total", "valor": 66.06, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "saludos por favor", "esperado": {"intencion": "saludo", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿me explicas qué haces?", "esperado": {"intencion": "ayuda", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "rectifica el trayecto 425: pasajeros uno ya que tarifa aeroportuaria mal aplicada", "esperado": {"intencion": "registrar_correccion", "viaje_id": 425, "campo": "pasajeros", "valor": 1.0, "borough": null, "fecha": null, "motivo": "tarifa aeroportuaria mal aplicada"}}
+{"texto": "cancelar trayecto 34, error de redondeo", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 34, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "error de redondeo"}}
+{"texto": "a ver, resumen de todas las compañías gracisa", "esperado": {"intencion": "metricas_globales", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "perdona, ¿me explicas qué haces? gracias", "esperado": {"intencion": "ayuda", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "perdona, quiero ver los últimos servicios registrados", "esperado": {"intencion": "listar_viajes", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "hola, me aburro", "esperado": {"intencion": "fuera_de_dominio", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "en el viaje 248 la propina correcto son 4,65", "esperado": {"intencion": "registrar_correccion", "viaje_id": 248, "campo": "propina", "valor": 4.65, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "repite para newark porfa", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": "EWR", "fecha": null, "motivo": null}}
+{"texto": "que tal en EWR?", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": "EWR", "fecha": null, "motivo": null}}
+{"texto": "porfa, dame una receta de paella", "esperado": {"intencion": "fuera_de_dominio", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "cancelar trayecto 311, revision mensual del proveedor", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 311, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "revision mensual del proveedor"}}
+{"texto": "consulta el trayecto 642", "esperado": {"intencion": "detalle_viaje", "viaje_id": 642, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿se ha moidficado algún dato?", "esperado": {"intencion": "historial_correcciones", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "hola, qué volumen de viajes llevamos?", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "hola, dame los viajes mas recientes", "esperado": {"intencion": "listar_viajes", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "necesito saber lo que ingresamos el dia 1 de enero por favor", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "--01-01", "motivo": null}}
+{"texto": "demanda segun la hora", "esperado": {"intencion": "viajes_por_hora", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "lista de zonas ordenada por viajes", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "consulta el trayecto 276", "esperado": {"intencion": "detalle_viaje", "viaje_id": 276, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "perdona, necesito arreglar las personas del viaje 31", "esperado": {"intencion": "registrar_correccion", "viaje_id": 31, "campo": "pasajeros", "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "cancelar trayecto 955, auditoria interna", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 955, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "auditoria interna"}}
+{"texto": "comparame los distritos", "esperado": {"intencion": "metricas_por_borough", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "perdona, igual pero el dia 5 de octubre", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "--10-05", "motivo": null}}
+{"texto": "necesito arreglar el cobro del viaje 87442", "esperado": {"intencion": "registrar_correccion", "viaje_id": 87442, "campo": "importe_total", "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "porfa, dame los viajes más recientes", "esperado": {"intencion": "listar_viajes", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "a ver, totales de la plataforma entera", "esperado": {"intencion": "metricas_globales", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "espera, no", "esperado": {"intencion": "negar", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "repite para manhattan", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": "Manhattan", "fecha": null, "motivo": null}}
+{"texto": "se paga mas en efectivo o con tarjeta? por favor", "esperado": {"intencion": "reparto_pagos", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿qué zonas de origen dominan el día 18 de diciembre?", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "--12-18", "motivo": null}}
+{"texto": "ponme las emrpesas una al lado de otra", "esperado": {"intencion": "metricas_globales", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "perdona, qué volumen de viajes llevamos?", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "lista de znoas ordenada por viajes", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "dame una receta de paelal", "esperado": {"intencion": "fuera_de_dominio", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "hola, te lo agradezco", "esperado": {"intencion": "gracias", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "el viaje 673 se registró con las personas mal, es seis", "esperado": {"intencion": "registrar_correccion", "viaje_id": 673, "campo": "pasajeros", "valor": 6.0, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "por que no me cuadra el total de ayer? por favor", "esperado": {"intencion": "historial_correcciones", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "a ver, dame los viajes mas recientes", "esperado": {"intencion": "listar_viajes", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿y la facturación de el día 1 de enero?", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "--01-01", "motivo": null}}
+{"texto": "no sé qué preguntarte", "esperado": {"intencion": "ayuda", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "claro que sí", "esperado": {"intencion": "afirmar", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "quiero anular el srevicio 7 porque auditoria interna", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 7, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "auditoria interna"}}
+{"texto": "¿a qué horas se concentran los servicios?", "esperado": {"intencion": "viajes_por_hora", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿a que horas se concentran los servicios?", "esperado": {"intencion": "viajes_por_hora", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "en el viaje 376 el numero de pasajeros correcto son cuatro", "esperado": {"intencion": "registrar_correccion", "viaje_id": 376, "campo": "pasajeros", "valor": 4.0, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "oye, necesito saber lo que ingresamos el día 18 de diciembre", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "--12-18", "motivo": null}}
+{"texto": "necesito arreglar la tarifa del viaje 254", "esperado": {"intencion": "registrar_correccion", "viaje_id": 254, "campo": "importe_total", "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "oye, nop", "esperado": {"intencion": "negar", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "el viaje 174 no se hizo, cancelalo", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 174, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿cómo está el viaje 74?", "esperado": {"intencion": "detalle_viaje", "viaje_id": 74, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "necesito arreglar los pasajeros del viaje 136 por favor", "esperado": {"intencion": "registrar_correccion", "viaje_id": 136, "campo": "pasajeros", "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "precio medio de una carrera en Staten", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": "Staten Island", "fecha": null, "motivo": null}}
+{"texto": "me aburro por favor", "esperado": {"intencion": "fuera_de_dominio", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "rectifica el trayecto 241: millas 1.10 ya que viaje duplicado", "esperado": {"intencion": "registrar_correccion", "viaje_id": 241, "campo": "distancia", "valor": 1.1, "borough": null, "fecha": null, "motivo": "viaje duplicado"}}
+{"texto": "en el viaje 647 la propina correcto son 3,74 $", "esperado": {"intencion": "registrar_correccion", "viaje_id": 647, "campo": "propina", "valor": 3.74, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "consulta el trayecto 3", "esperado": {"intencion": "detalle_viaje", "viaje_id": 3, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿que sabes hacer?", "esperado": {"intencion": "ayuda", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "resumen de todas las compañías", "esperado": {"intencion": "metricas_globales", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "estadisticas generales gracais", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "el viaje 54 no se hizo, cancélalo", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 54, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿qué método de pago deja más propina? poraf", "esperado": {"intencion": "reparto_pagos", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "holaa gracias", "esperado": {"intencion": "saludo", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "dame una receta de paella", "esperado": {"intencion": "fuera_de_dominio", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "en el viaje 880 la propina correcto son 8 $", "esperado": {"intencion": "registrar_correccion", "viaje_id": 880, "campo": "propina", "valor": 8.0, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿a qué se debe la diferencia en las cifras?", "esperado": {"intencion": "historial_correcciones", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿donde recogemos mas clientes?", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿qué tal en bronx?", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": "Bronx", "fecha": null, "motivo": null}}
+{"texto": "perdona, sí, confirmado", "esperado": {"intencion": "afirmar", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿que zonas de origen dominan el 1 de enero de 2020?", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "2020-01-01", "motivo": null}}
+{"texto": "oye, que cambios tiene el viaje 923?", "esperado": {"intencion": "detalle_viaje", "viaje_id": 923, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "precio medio de una carrera en the Bronx gracias", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": "Bronx", "fecha": null, "motivo": null}}
+{"texto": "necesito saber lo que ingresamos el día de nochevieja", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "--12-31", "motivo": null}}
+{"texto": "hola, saludos", "esperado": {"intencion": "saludo", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "perdona, quiero anular el servicio 751 porque reclamacion del cliente", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 751, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "reclamacion del cliente"}}
+{"texto": "sí, confirmado", "esperado": {"intencion": "afirmar", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "quiero anular el servicio 434 porque revision mensual del proveedor por favor", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 434, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "revision mensual del proveedor"}}
+{"texto": "y la facturación de el 04/07/2020?", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "2020-07-04", "motivo": null}}
+{"texto": "qué tal en ewr? profa", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": "EWR", "fecha": null, "motivo": null}}
+{"texto": "perdona, que cambios tiene el viaje 46321?", "esperado": {"intencion": "detalle_viaje", "viaje_id": 46321, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "totales de la plaatforma entera", "esperado": {"intencion": "metricas_globales", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "el viaje 718 no se hizo, cancélalo", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 718, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "consulta el trayecto 51", "esperado": {"intencion": "detalle_viaje", "viaje_id": 51, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "qué volumen de viajse llevamos?", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "no sé qué prgeuntarte", "esperado": {"intencion": "ayuda", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "demanda según la hora por favor", "esperado": {"intencion": "viajes_por_hora", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "quien eres", "esperado": {"intencion": "fuera_de_dominio", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "estadísticas generales", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "cancelar trayecto 5, se cobro dos veces", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 5, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "se cobro dos veces"}}
+{"texto": "porfa, hay que cambiar la propina del servicio 911, ponle 7,44 por favor", "esperado": {"intencion": "registrar_correccion", "viaje_id": 911, "campo": "propina", "valor": 7.44, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿qué volumen de viajes llevamos?", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "dale", "esperado": {"intencion": "afirmar", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿qué zonas de origen dominan el día 1 de enero? por favor", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "--01-01", "motivo": null}}
+{"texto": "a ver, estadísticas generales", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "cuantas carreras se hicieron en queens?", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": "Queens", "fecha": null, "motivo": null}}
+{"texto": "oye, se ha modificado algún dato?", "esperado": {"intencion": "historial_correcciones", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "hay que cambiar el recorrido del servicio 284, ponle 10,53 millas", "esperado": {"intencion": "registrar_correccion", "viaje_id": 284, "campo": "distancia", "valor": 10.53, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "necesito arreglar los pasajeros del viaje 645", "esperado": {"intencion": "registrar_correccion", "viaje_id": 645, "campo": "pasajeros", "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "oye, pon música", "esperado": {"intencion": "fuera_de_dominio", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "oye, se ha modificado algun dato?", "esperado": {"intencion": "historial_correcciones", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "porfa, ¿a qué horas se concentran los servicios?", "esperado": {"intencion": "viajes_por_hora", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "perdona, cuántas carreras se hicieron en Brooklyn?", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": "Brooklyn", "fecha": null, "motivo": null}}
+{"texto": "¿y la facturación de el 2020-06-16? por favor", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "2020-06-16", "motivo": null}}
+{"texto": "hola, a qué se debe la diferencia en las cifras?", "esperado": {"intencion": "historial_correcciones", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "el viaje 56672 no se hizo, cancélalo", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 56672, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "perdona, desgolse por medio de pago", "esperado": {"intencion": "reparto_pagos", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "perdona, quiero ver los ultimos servicios registrados por favor", "esperado": {"intencion": "listar_viajes", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "dame los viajes mas recientes porfa", "esperado": {"intencion": "listar_viajes", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "hola, espera, no por fvaor", "esperado": {"intencion": "negar", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "porfa, resumen de todas las compañías", "esperado": {"intencion": "metricas_globales", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "necesito arreglar el cobro del viaje 255", "esperado": {"intencion": "registrar_correccion", "viaje_id": 255, "campo": "importe_total", "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "qué volumen de viajes llevamos? gracias", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "perdona, lista de zonas ordenada por viajes", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "qué tal en el aeropuetro de Newark?", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": "EWR", "fecha": null, "motivo": null}}
+{"texto": "a ver, quiero ver los últimos servicios regsitrados", "esperado": {"intencion": "listar_viajes", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "qué tal en the bronx?", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": "Bronx", "fecha": null, "motivo": null}}
+{"texto": "hola, ¿se paga más en efectivo o con tarjeta?", "esperado": {"intencion": "reparto_pagos", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿qué zonas de origen dominan el 24/09/2020?", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "2020-09-24", "motivo": null}}
+{"texto": "necesito arreglar lo cobrado del viaje 561", "esperado": {"intencion": "registrar_correccion", "viaje_id": 561, "campo": "importe_total", "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "perdona, rectifica el trayecto 849: millas 23.48 ya que faltaba el peaje", "esperado": {"intencion": "registrar_correccion", "viaje_id": 849, "campo": "distancia", "valor": 23.48, "borough": null, "fecha": null, "motivo": "faltaba el peaje"}}
+{"texto": "porfa, no sé qué preguntarte por favor", "esperado": {"intencion": "ayuda", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿y la facturación de el 2019-12-31?", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "2019-12-31", "motivo": null}}
+{"texto": "barrios mas activos de Manhattan", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": "Manhattan", "fecha": null, "motivo": null}}
+{"texto": "hola, quiero anular el servicio 65 porque servicio no realizado", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 65, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "servicio no realizado"}}
+{"texto": "hola, quiero anular el servicio 638 porque lo confirmo el proveedor por correo", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 638, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "lo confirmo el proveedor por correo"}}
+{"texto": "a ver, espera, no", "esperado": {"intencion": "negar", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "qué volumen de viajes llevamos?", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "necesito arreglar la distancia del viaje 809", "esperado": {"intencion": "registrar_correccion", "viaje_id": 809, "campo": "distancia", "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "a ver, ponme las empresas una al lado de otra gracias", "esperado": {"intencion": "metricas_globales", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "necesito arreglar la propina del viaje 52", "esperado": {"intencion": "registrar_correccion", "viaje_id": 52, "campo": "propina", "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "dale por favro", "esperado": {"intencion": "afirmar", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "consulta el trayecto 153", "esperado": {"intencion": "detalle_viaje", "viaje_id": 153, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "a ver, cancelar trayecto 585, error del conductor al teclear", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 585, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "error del conductor al teclear"}}
+{"texto": "me aburro", "esperado": {"intencion": "fuera_de_dominio", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "perdona, barrios más activos de Manhattan", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": "Manhattan", "fecha": null, "motivo": null}}
+{"texto": "te lo agradezco gracias", "esperado": {"intencion": "gracias", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "porfa, no, gracias gracias", "esperado": {"intencion": "negar", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "demanda según la hora porfa", "esperado": {"intencion": "viajes_por_hora", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿y la facturación de el día de año nuevo?", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "--01-01", "motivo": null}}
+{"texto": "porfa, te lo agradezco", "esperado": {"intencion": "gracias", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "quiero ver el servicio 384", "esperado": {"intencion": "detalle_viaje", "viaje_id": 384, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "hay que cambiar la propina del servicio 26963, ponle 9,89 por favor", "esperado": {"intencion": "registrar_correccion", "viaje_id": 26963, "campo": "propina", "valor": 9.89, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "no, gracias por favor", "esperado": {"intencion": "negar", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿cuál es el momento del día con más carreras?", "esperado": {"intencion": "viajes_por_hora", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿cómo está el viaje 570?", "esperado": {"intencion": "detalle_viaje", "viaje_id": 570, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "rectifica el trayecto 654: propina 10,10 $ ya que el proveedor mando un dato erroneo", "esperado": {"intencion": "registrar_correccion", "viaje_id": 654, "campo": "propina", "valor": 10.1, "borough": null, "fecha": null, "motivo": "el proveedor mando un dato erroneo"}}
+{"texto": "perdona, pon música", "esperado": {"intencion": "fuera_de_dominio", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿a que se debe la diferencia en las cifras? porfa", "esperado": {"intencion": "historial_correcciones", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "porfa, registro de cambios gracias", "esperado": {"intencion": "historial_correcciones", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "porfa, registro de cambios", "esperado": {"intencion": "historial_correcciones", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "estadisticas generales porfa", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "oye, y la facturacion de el 18 de diciembre?", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "--12-18", "motivo": null}}
+{"texto": "qué zonas de origen dominan el 2019-06-11?", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "2019-06-11", "motivo": null}}
+{"texto": "igual pero el dia 15 de marzo", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "--03-15", "motivo": null}}
+{"texto": "a ver, que cambios tiene el viaje 768?", "esperado": {"intencion": "detalle_viaje", "viaje_id": 768, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "perdona, saludos", "esperado": {"intencion": "saludo", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "repite para the bronx", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": "Bronx", "fecha": null, "motivo": null}}
+{"texto": "necesito arreglar el número de pasajeros del viaje 381", "esperado": {"intencion": "registrar_correccion", "viaje_id": 381, "campo": "pasajeros", "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "qué tal en Bronx?", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": "Bronx", "fecha": null, "motivo": null}}
+{"texto": "el viaje 201 no se hizo, cancélalo", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 201, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "a ver, necesito saebr lo que ingresamos el 18 de diciembre de 2019", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "2019-12-18", "motivo": null}}
+{"texto": "perdona, espera, no", "esperado": {"intencion": "negar", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "viajes agrupados por borough", "esperado": {"intencion": "metricas_por_borough", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "compárame los distritos", "esperado": {"intencion": "metricas_por_borough", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿que tal en el aeropeurto de Newark?", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": "EWR", "fecha": null, "motivo": null}}
+{"texto": "porfa, lista de zonas ordenada por viajes", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "pon musica", "esperado": {"intencion": "fuera_de_dominio", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "viajes agrupados por borough porfa", "esperado": {"intencion": "metricas_por_borough", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿qué zonas de origen dominan el 1 de enero? por favor", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "--01-01", "motivo": null}}
+{"texto": "oye, dame los viajes más recientes", "esperado": {"intencion": "listar_viajes", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "desglose por medio de pago", "esperado": {"intencion": "reparto_pagos", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "oye, qué cambios tiene el viaje 779?", "esperado": {"intencion": "detalle_viaje", "viaje_id": 779, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "si, confirmado porfa", "esperado": {"intencion": "afirmar", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "qué cambios tiene el viaje 811?", "esperado": {"intencion": "detalle_viaje", "viaje_id": 811, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "nop", "esperado": {"intencion": "negar", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "perdona, el viaje 310 se registro con la distancia mal, es 21,86 millas", "esperado": {"intencion": "registrar_correccion", "viaje_id": 310, "campo": "distancia", "valor": 21.86, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "porfa, necesito saber lo que ingresamos el 25 de noviembre de 2020", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "2020-11-25", "motivo": null}}
+{"texto": "el viaje 742 no se hizo, cancelalo", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 742, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "necesito arreglar la distancia recorrida del viaje 468", "esperado": {"intencion": "registrar_correccion", "viaje_id": 468, "campo": "distancia", "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "qué cambios tiene el viaje 43254?", "esperado": {"intencion": "detalle_viaje", "viaje_id": 43254, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "oye, totales de la platfaorma entera porfa", "esperado": {"intencion": "metricas_globales", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿por que no me caudra el total de ayer?", "esperado": {"intencion": "historial_correcciones", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "consulta el trayecto 456", "esperado": {"intencion": "detalle_viaje", "viaje_id": 456, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "cancelar trayecto 899, el cliente pago menos", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 899, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "el cliente pago menos"}}
+{"texto": "como esta el viaje 966?", "esperado": {"intencion": "detalle_viaje", "viaje_id": 966, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "por que no me cuadra el total de ayer?", "esperado": {"intencion": "historial_correcciones", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "perdona, si, confirmado", "esperado": {"intencion": "afirmar", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "y la facturación de el 31/12/2019?", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "2019-12-31", "motivo": null}}
+{"texto": "porfa, cual es el momento del dia con mas carreras?", "esperado": {"intencion": "viajes_por_hora", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "que zonas de origen dominan el 23 de agosto de 2021? porfa", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "2021-08-23", "motivo": null}}
+{"texto": "hola, precio medio de una carrera en brooklyn", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": "Brooklyn", "fecha": null, "motivo": null}}
+{"texto": "¿qué zonas de origen dominan el 18 de diciembre de 2019?", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "2019-12-18", "motivo": null}}
+{"texto": "que sabes hacer?", "esperado": {"intencion": "ayuda", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "perdona, quiero ver los ultimos servicios registrados", "esperado": {"intencion": "listar_viajes", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "pon música porfa", "esperado": {"intencion": "fuera_de_dominio", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "oye, saludos", "esperado": {"intencion": "saludo", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "y la facturación de el 31 de diciembre de 2019?", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "2019-12-31", "motivo": null}}
+{"texto": "¿y la facturación de en año nuevo?", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "--01-01", "motivo": null}}
+{"texto": "a ver, resumen de todas las compañías", "esperado": {"intencion": "metricas_globales", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "hola, ¿qué volumen de viajes llevamos?", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "necesito saber lo que ingresamos el 7 de marzo de 2020", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "2020-03-07", "motivo": null}}
+{"texto": "¿se paga más en efectivo o con tarjeta? gracias", "esperado": {"intencion": "reparto_pagos", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "perdona, no, graicas", "esperado": {"intencion": "negar", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "porfa, ponme las empresas una al lado de otra", "esperado": {"intencion": "metricas_globales", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "a ver, lista de zonas ordenada por viajes", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "no, gracias", "esperado": {"intencion": "negar", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "oye, registro de cambios", "esperado": {"intencion": "historial_correcciones", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "el viaje 216 no se hizo, cancélalo", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 216, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "rectifica el trayecto 72314: millas 13,97 millas ya que el taximetro fallo", "esperado": {"intencion": "registrar_correccion", "viaje_id": 72314, "campo": "distancia", "valor": 13.97, "borough": null, "fecha": null, "motivo": "el taximetro fallo"}}
+{"texto": "necesito arreglar la propina del viaje 619", "esperado": {"intencion": "registrar_correccion", "viaje_id": 619, "campo": "propina", "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "quién eres", "esperado": {"intencion": "fuera_de_dominio", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "quiero anular el servicio 730 porque auditoria interna", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 730, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "auditoria interna"}}
+{"texto": "pon música", "esperado": {"intencion": "fuera_de_dominio", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "porfa, quiero ver los ultimos servicios registrados", "esperado": {"intencion": "listar_viajes", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "dame los viajes más recientes", "esperado": {"intencion": "listar_viajes", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "oye, que volumen de viajes llevamos?", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿cuántas carreras se hicieron en manhattan?", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": "Manhattan", "fecha": null, "motivo": null}}
+{"texto": "a ver, consulta el trayecto 726", "esperado": {"intencion": "detalle_viaje", "viaje_id": 726, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿se ha modificado algun dato?", "esperado": {"intencion": "historial_correcciones", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "igual pero el 1 de enero", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "--01-01", "motivo": null}}
+{"texto": "oye, desglose por medio de pago", "esperado": {"intencion": "reparto_pagos", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "porfa, el viaje 172 se registro con la propina mal, es 4.82", "esperado": {"intencion": "registrar_correccion", "viaje_id": 172, "campo": "propina", "valor": 4.82, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "porfa, cancelar trayecto 93887, auditoria interna porfa", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 93887, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "auditoria interna"}}
+{"texto": "oye, dale", "esperado": {"intencion": "afirmar", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "se ha modificado algún dato?", "esperado": {"intencion": "historial_correcciones", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "oye, qué distrito concentra más viajes?", "esperado": {"intencion": "metricas_por_borough", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "el viaje 71565 se registró con la propina mal, es 12 $", "esperado": {"intencion": "registrar_correccion", "viaje_id": 71565, "campo": "propina", "valor": 12.0, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿que zonas de origen dominan el dia 18 de diciembre?", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "--12-18", "motivo": null}}
+{"texto": "hola, desglose por medio de pago porfa", "esperado": {"intencion": "reparto_pagos", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "ponme las empresas una al lado de otra por favor", "esperado": {"intencion": "metricas_globales", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "perdona, cómo está el viaje 96148?", "esperado": {"intencion": "detalle_viaje", "viaje_id": 96148, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "hola, ¿me explicas qué haces?", "esperado": {"intencion": "ayuda", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "perdona, comparame los distritos", "esperado": {"intencion": "metricas_por_borough", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "a ver, por qué no me cuadra el total de ayer?", "esperado": {"intencion": "historial_correcciones", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "a ver, no, gracias", "esperado": {"intencion": "negar", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "porfa, a que se debe la diferencia en las cifras?", "esperado": {"intencion": "historial_correcciones", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "igual pero el 10 de diciemrbe", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "--12-10", "motivo": null}}
+{"texto": "¿cuantas carreras se hicieron en manhattan?", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": "Manhattan", "fecha": null, "motivo": null}}
+{"texto": "el viaje 463 se registró con las personas mal, es dos", "esperado": {"intencion": "registrar_correccion", "viaje_id": 463, "campo": "pasajeros", "valor": 2.0, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "cancelar trayecto 39097, el cliente pago menos", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 39097, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "el cliente pago menos"}}
+{"texto": "a ver, y la facturacion de el dia de nochevieja?", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "--12-31", "motivo": null}}
+{"texto": "oye, repite para Queens", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": "Queens", "fecha": null, "motivo": null}}
+{"texto": "a ver, repite para Newark", "esperado": {"intencion": "seguimiento", "viaje_id": null, "campo": null, "valor": null, "borough": "EWR", "fecha": null, "motivo": null}}
+{"texto": "perdona, holaa", "esperado": {"intencion": "saludo", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "y la facturación de el día 27 de febrero?", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "--02-27", "motivo": null}}
+{"texto": "qué zonas de origen dominan el 26 de febrero de 2020?", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "2020-02-26", "motivo": null}}
+{"texto": "y la facturación de el 2019-12-31?", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "2019-12-31", "motivo": null}}
+{"texto": "quiero anular el servicio 339 porque el taximetro fallo", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 339, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "el taximetro fallo"}}
+{"texto": "qué método de pago deja más propina?", "esperado": {"intencion": "reparto_pagos", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "oye, barrios mas activos de bronx", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": "Bronx", "fecha": null, "motivo": null}}
+{"texto": "rectifica el trayecto 957: total 91 ya que el cliente anulo el servicio", "esperado": {"intencion": "registrar_correccion", "viaje_id": 957, "campo": "importe_total", "valor": 91.0, "borough": null, "fecha": null, "motivo": "el cliente anulo el servicio"}}
+{"texto": "perdona, claro que si", "esperado": {"intencion": "afirmar", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "cómo está el viaje 2040? porfa", "esperado": {"intencion": "detalle_viaje", "viaje_id": 2040, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿cuántas carreras se hicieron en brooklyn?", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": "Brooklyn", "fecha": null, "motivo": null}}
+{"texto": "perdona, necesito arreglar el precio del vijae 580", "esperado": {"intencion": "registrar_correccion", "viaje_id": 580, "campo": "importe_total", "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "registro de cambios", "esperado": {"intencion": "historial_correcciones", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "lista de zonas ordenada por viajse", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "oye, totales de la plataforma entera", "esperado": {"intencion": "metricas_globales", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "porfa, ¿que distrito concentra mas viajes?", "esperado": {"intencion": "metricas_por_borough", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "consulta el trayecto 871", "esperado": {"intencion": "detalle_viaje", "viaje_id": 871, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "quiero anular el servicio 88182 porque la propina era en efectivo", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 88182, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "la propina era en efectivo"}}
+{"texto": "desglose por mdeio de pago", "esperado": {"intencion": "reparto_pagos", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "cancelar trayecto 678, el taximetro fallo", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 678, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "el taximetro fallo"}}
+{"texto": "porfa, claro que si", "esperado": {"intencion": "afirmar", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿qué método de pago deja más propina?", "esperado": {"intencion": "reparto_pagos", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "precio medio de una carrera en queens", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": "Queens", "fecha": null, "motivo": null}}
+{"texto": "rectifica el trayecto 31: propina 10 $ ya que viaje duplicado", "esperado": {"intencion": "registrar_correccion", "viaje_id": 31, "campo": "propina", "valor": 10.0, "borough": null, "fecha": null, "motivo": "viaje duplicado"}}
+{"texto": "hola, registro de cambios", "esperado": {"intencion": "historial_correcciones", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿cómo está el viaje 448?", "esperado": {"intencion": "detalle_viaje", "viaje_id": 448, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "registro de cambios graicas", "esperado": {"intencion": "historial_correcciones", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "porfa, nop", "esperado": {"intencion": "negar", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "nop por favor", "esperado": {"intencion": "negar", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "a ver, me explicas qué haces? gracias", "esperado": {"intencion": "ayuda", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "resumen de todas las compañías por favor", "esperado": {"intencion": "metricas_globales", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "cuántas carreras se hicieron en the bronx?", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": "Bronx", "fecha": null, "motivo": null}}
+{"texto": "resumen de todas las compañias", "esperado": {"intencion": "metricas_globales", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "¿a que horas se concentran los servicios? porfa", "esperado": {"intencion": "viajes_por_hora", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "cancelar trayecto 575, el conductor no llego a recogerlo", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 575, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "el conductor no llego a recogerlo"}}
+{"texto": "¿cómo está el viaje 469? por favor", "esperado": {"intencion": "detalle_viaje", "viaje_id": 469, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "porfa, quién eres", "esperado": {"intencion": "fuera_de_dominio", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "a ver, claro que sí", "esperado": {"intencion": "afirmar", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "perdona, demanda segun la hora", "esperado": {"intencion": "viajes_por_hora", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "hola, quiero ver los últimos servicios registrados", "esperado": {"intencion": "listar_viajes", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "en el viaje 86 lo cobrado correcto son 45 dolares", "esperado": {"intencion": "registrar_correccion", "viaje_id": 86, "campo": "importe_total", "valor": 45.0, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "me exlpicas qué haces?", "esperado": {"intencion": "ayuda", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "cancelar trayecto 3586, la propina era en efectivo", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 3586, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "la propina era en efectivo"}}
+{"texto": "perdona, rectifica el trayecto 489: propina 2 dólares ya que fallo de la aplicación", "esperado": {"intencion": "registrar_correccion", "viaje_id": 489, "campo": "propina", "valor": 2.0, "borough": null, "fecha": null, "motivo": "fallo de la aplicación"}}
+{"texto": "perdona, ¿qué zonas de origen dominan el 31 de diciembre de 2019?", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": "2019-12-31", "motivo": null}}
+{"texto": "a qué horas se concentran los servicios?", "esperado": {"intencion": "viajes_por_hora", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "porfa, barrios más activos de Brooklyn", "esperado": {"intencion": "metricas_por_zona", "viaje_id": null, "campo": null, "valor": null, "borough": "Brooklyn", "fecha": null, "motivo": null}}
+{"texto": "hola, hay que cambiar la tarifa del servicio 183, ponle 61,83", "esperado": {"intencion": "registrar_correccion", "viaje_id": 183, "campo": "importe_total", "valor": 61.83, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "quiero ver los ultimos servicios registrados", "esperado": {"intencion": "listar_viajes", "viaje_id": null, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": null}}
+{"texto": "porfa, cancelar trayecto 194, faltaba el peaje", "esperado": {"intencion": "cancelar_viaje", "viaje_id": 194, "campo": null, "valor": null, "borough": null, "fecha": null, "motivo": "faltaba el peaje"}}
+{"texto": "¿cuantas carreras se hicieron en Manhattan?", "esperado": {"intencion": "resumen_metricas", "viaje_id": null, "campo": null, "valor": null, "borough": "Manhattan", "fecha": null, "motivo": null}}

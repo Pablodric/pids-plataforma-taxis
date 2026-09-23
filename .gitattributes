@@ -1,0 +1,5 @@
+# Finales de linea LF siempre: en Windows, Git convertiria los scripts a
+# CRLF y el contenedor Linux fallaria al ejecutarlos ("\r: not found").
+* text=auto eol=lf
+*.png binary
+*.gguf binary

@@ -5,6 +5,7 @@
 --                                + recalculo incremental de metricas
 --   E7. Plataforma multiempresa -> empresa_id en cada hecho + RLS
 --                                + rol de aplicacion sin privilegios
+--                                + FK compuesta viaje/empresa
 -- =====================================================================
 
 -- ---------------------------------------------------------------------
@@ -31,7 +32,7 @@ CREATE TABLE empresas (
     nombre              TEXT NOT NULL,
     vendor_id_origen    INTEGER,          -- VendorID del dataset que le pertenece
     -- E7: "Evitar que una empresa consuma todos los recursos disponibles"
-    cuota_consultas_min INTEGER NOT NULL DEFAULT 20,
+    cuota_consultas_min INTEGER NOT NULL DEFAULT 20 CHECK (cuota_consultas_min > 0),
     creada_en           TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -39,9 +40,10 @@ CREATE TABLE usuarios (
     id          SERIAL PRIMARY KEY,
     email       TEXT UNIQUE NOT NULL,
     empresa_id  TEXT NOT NULL REFERENCES empresas(id),
-    -- 'usuario'    -> solo datos de su empresa
+    -- 'usuario'    -> solo consulta datos de su empresa
     -- 'operador'   -> ademas puede registrar correcciones (E6)
-    -- 'auditor'    -> ademas puede consultar metricas globales (E7)
+    -- 'auditor'    -> consulta metricas globales (E7), pero NO escribe:
+    --                 quien audita no debe poder alterar lo auditado
     rol         TEXT NOT NULL CHECK (rol IN ('usuario', 'operador', 'auditor')),
     -- Guardamos hash, nunca la contrasena en claro
     password_hash TEXT NOT NULL,
@@ -62,6 +64,24 @@ CREATE TABLE zonas (
 );
 
 CREATE INDEX idx_zonas_borough ON zonas (borough);
+
+
+-- =====================================================================
+-- Registro de cada ejecucion de la ingesta: fichero, huella SHA-256 y
+-- recuento de filas cargadas, descartadas y anomalas. Permite saber de
+-- donde sale cada cifra (base para E5 si hubiera que adaptarse).
+-- =====================================================================
+
+CREATE TABLE ingestas (
+    id                SERIAL PRIMARY KEY,
+    fichero           TEXT NOT NULL,
+    sha256            TEXT NOT NULL,
+    filas_leidas      INTEGER NOT NULL,
+    filas_cargadas    INTEGER NOT NULL,
+    filas_descartadas INTEGER NOT NULL,
+    anomalias         JSONB NOT NULL DEFAULT '{}'::jsonb,
+    ejecutada_en      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 
 
 -- =====================================================================
@@ -86,11 +106,14 @@ CREATE TABLE viajes (
     peajes              NUMERIC(10,2),
     recargo_congestion  NUMERIC(10,2),
     importe_total       NUMERIC(10,2),
-    ingerido_en         TIMESTAMPTZ NOT NULL DEFAULT now()
+    ingerido_en         TIMESTAMPTZ NOT NULL DEFAULT now(),
+    -- Necesaria para la FK compuesta de 'correcciones' (ver abajo)
+    CONSTRAINT uq_viajes_id_empresa UNIQUE (id, empresa_id)
 );
 
 CREATE INDEX idx_viajes_empresa_fecha ON viajes (empresa_id, (pickup_ts::date));
 CREATE INDEX idx_viajes_pu            ON viajes (pu_location_id);
+CREATE INDEX idx_viajes_pickup        ON viajes (pickup_ts DESC);
 
 
 -- =====================================================================
@@ -101,7 +124,7 @@ CREATE INDEX idx_viajes_pu            ON viajes (pu_location_id);
 
 CREATE TABLE correcciones (
     id              BIGSERIAL PRIMARY KEY,
-    viaje_id        BIGINT NOT NULL REFERENCES viajes(id),
+    viaje_id        BIGINT NOT NULL,
     empresa_id      TEXT NOT NULL REFERENCES empresas(id),
     tipo            TEXT NOT NULL CHECK (tipo IN ('correccion', 'cancelacion')),
     -- Para 'correccion': que campo se corrige. Para 'cancelacion': NULL.
@@ -109,13 +132,106 @@ CREATE TABLE correcciones (
                         ('importe_total', 'distancia', 'pasajeros', 'propina')),
     valor_original  NUMERIC(10,2),
     valor_nuevo     NUMERIC(10,2),
-    motivo          TEXT,
-    aplicada_en     TIMESTAMPTZ NOT NULL DEFAULT now(),
-    aplicada_por    TEXT NOT NULL
+    motivo          TEXT NOT NULL CHECK (length(btrim(motivo)) >= 3),
+    aplicada_en     TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    aplicada_por    TEXT NOT NULL,
+
+    -- Registro a prueba de manipulaciones: cada correccion guarda el hash
+    -- SHA-256 de su contenido y del hash de la anterior de SU empresa
+    -- (una cadena por empresa, como un libro contable). Si alguien con
+    -- acceso de superusuario altera o borra un eslabon, la cadena deja de
+    -- cuadrar y la verificacion (GET /auditoria/cadena) lo detecta.
+    eslabon         BIGINT NOT NULL,
+    hash_anterior   CHAR(64) NOT NULL,
+    hash            CHAR(64) NOT NULL,
+    CONSTRAINT uq_eslabon_por_empresa UNIQUE (empresa_id, eslabon),
+
+    -- E7: la empresa de la correccion TIENE que ser la del viaje.
+    -- Con una FK simple sobre viaje_id, un rol que pudiera leer viajes
+    -- ajenos (el auditor) podia anotar una correccion con su propia
+    -- empresa sobre el viaje de otra. La FK compuesta lo hace imposible
+    -- en el propio motor, se llame desde donde se llame.
+    CONSTRAINT fk_correccion_viaje_empresa
+        FOREIGN KEY (viaje_id, empresa_id) REFERENCES viajes (id, empresa_id),
+
+    -- Coherencia del evento segun su tipo
+    CONSTRAINT ck_forma_evento CHECK (
+        (tipo = 'correccion'  AND campo IS NOT NULL AND valor_nuevo IS NOT NULL)
+     OR (tipo = 'cancelacion' AND campo IS NULL     AND valor_nuevo IS NULL)
+    )
 );
 
-CREATE INDEX idx_correcciones_viaje   ON correcciones (viaje_id);
+CREATE INDEX idx_correcciones_viaje   ON correcciones (viaje_id, aplicada_en DESC, id DESC);
 CREATE INDEX idx_correcciones_empresa ON correcciones (empresa_id, aplicada_en DESC);
+
+-- E6: un viaje solo se puede cancelar una vez. Comprobarlo en la API no
+-- basta: dos peticiones simultaneas pasarian las dos la comprobacion.
+CREATE UNIQUE INDEX uq_una_cancelacion_por_viaje
+    ON correcciones (viaje_id) WHERE tipo = 'cancelacion';
+
+
+-- ---------------------------------------------------------------------
+-- Cadena de hashes. El contenido canonico se recalcula de forma
+-- independiente en Python al verificar (repositorio.verificar_cadena):
+-- dos implementaciones distintas tienen que coincidir byte a byte.
+-- ---------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION contenido_canonico(
+    p_hash_anterior TEXT, p_eslabon BIGINT, p_empresa TEXT, p_viaje BIGINT,
+    p_tipo TEXT, p_campo TEXT, p_original NUMERIC, p_nuevo NUMERIC,
+    p_motivo TEXT, p_autor TEXT, p_momento TIMESTAMPTZ
+) RETURNS TEXT AS $$
+    SELECT concat_ws('|', p_hash_anterior, p_eslabon, p_empresa, p_viaje, p_tipo,
+                     coalesce(p_campo, ''), coalesce(p_original::text, ''),
+                     coalesce(p_nuevo::text, ''), p_motivo, p_autor,
+                     to_char(p_momento AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US'))
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION trg_encadenar() RETURNS TRIGGER AS $$
+DECLARE
+    v_prev    TEXT;
+    v_eslabon BIGINT;
+BEGIN
+    -- Serializa las inserciones de UNA empresa (las demas no esperan)
+    PERFORM pg_advisory_xact_lock(hashtext('cadena:' || NEW.empresa_id));
+    SELECT hash, eslabon INTO v_prev, v_eslabon
+      FROM correcciones
+     WHERE empresa_id = NEW.empresa_id
+     ORDER BY eslabon DESC
+     LIMIT 1;
+    NEW.eslabon       := COALESCE(v_eslabon, 0) + 1;
+    NEW.hash_anterior := COALESCE(v_prev, repeat('0', 64));
+    NEW.hash := encode(sha256(convert_to(contenido_canonico(
+        NEW.hash_anterior, NEW.eslabon, NEW.empresa_id, NEW.viaje_id, NEW.tipo,
+        NEW.campo, NEW.valor_original, NEW.valor_nuevo, NEW.motivo,
+        NEW.aplicada_por, NEW.aplicada_en), 'UTF8')), 'hex');
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER correccion_encadena
+    BEFORE INSERT ON correcciones
+    FOR EACH ROW EXECUTE FUNCTION trg_encadenar();
+
+
+-- ---------------------------------------------------------------------
+-- E6: registro de solo-anadir. Ni siquiera el superusuario puede editar
+-- o borrar un hecho o una correccion ya registrados: el historial es la
+-- prueba de lo ocurrido. (Para empezar de cero: docker compose down -v)
+-- ---------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION trg_solo_anadir() RETURNS TRIGGER AS $$
+BEGIN
+    RAISE EXCEPTION 'La tabla % es de solo-anadir: registra una correccion en lugar de modificarla', TG_TABLE_NAME
+        USING ERRCODE = 'insufficient_privilege';
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER viajes_inmutables
+    BEFORE UPDATE OR DELETE ON viajes
+    FOR EACH ROW EXECUTE FUNCTION trg_solo_anadir();
+
+CREATE TRIGGER correcciones_inmutables
+    BEFORE UPDATE OR DELETE ON correcciones
+    FOR EACH ROW EXECUTE FUNCTION trg_solo_anadir();
 
 
 -- =====================================================================
@@ -130,17 +246,11 @@ CREATE INDEX idx_correcciones_empresa ON correcciones (empresa_id, aplicada_en D
 -- (postgres), que se salta las politicas RLS de las tablas de debajo:
 -- sin esta opcion, la vista devolveria viajes de TODAS las empresas y
 -- el aislamiento de E7 quedaria roto por una puerta lateral.
+--
+-- Las correcciones de cada viaje se resuelven en un unico LATERAL que
+-- usa el indice (viaje_id, aplicada_en DESC): coste proporcional a las
+-- correcciones de ESE viaje, no a toda la tabla de correcciones.
 CREATE VIEW v_viajes_vigentes WITH (security_invoker = true) AS
-WITH ultima_correccion AS (
-    SELECT DISTINCT ON (viaje_id, campo)
-           viaje_id, campo, valor_nuevo, aplicada_en
-      FROM correcciones
-     WHERE tipo = 'correccion'
-     ORDER BY viaje_id, campo, aplicada_en DESC
-),
-cancelados AS (
-    SELECT DISTINCT viaje_id FROM correcciones WHERE tipo = 'cancelacion'
-)
 SELECT
     v.id,
     v.empresa_id,
@@ -149,21 +259,76 @@ SELECT
     v.pu_location_id,
     v.do_location_id,
     v.tipo_pago,
-    COALESCE((SELECT valor_nuevo FROM ultima_correccion u
-               WHERE u.viaje_id = v.id AND u.campo = 'pasajeros'), v.pasajeros)         AS pasajeros,
-    COALESCE((SELECT valor_nuevo FROM ultima_correccion u
-               WHERE u.viaje_id = v.id AND u.campo = 'distancia'), v.distancia)         AS distancia,
-    COALESCE((SELECT valor_nuevo FROM ultima_correccion u
-               WHERE u.viaje_id = v.id AND u.campo = 'propina'), v.propina)             AS propina,
-    COALESCE((SELECT valor_nuevo FROM ultima_correccion u
-               WHERE u.viaje_id = v.id AND u.campo = 'importe_total'), v.importe_total) AS importe_total,
+    COALESCE(c.pasajeros,     v.pasajeros)     AS pasajeros,
+    COALESCE(c.distancia,     v.distancia)     AS distancia,
+    COALESCE(c.propina,       v.propina)       AS propina,
+    COALESCE(c.importe_total, v.importe_total) AS importe_total,
+    v.pasajeros     AS pasajeros_original,
+    v.distancia     AS distancia_original,
+    v.propina       AS propina_original,
     v.importe_total AS importe_total_original,
-    -- Trazabilidad: estas dos columnas permiten al chatbot avisar de que
+    -- Trazabilidad: estas columnas permiten al chatbot avisar de que
     -- una metrica incluye datos corregidos (requisito explicito de E6).
-    EXISTS (SELECT 1 FROM correcciones c
-             WHERE c.viaje_id = v.id AND c.tipo = 'correccion')   AS tiene_correccion,
-    (v.id IN (SELECT viaje_id FROM cancelados))                   AS cancelado
-FROM viajes v;
+    COALESCE(c.num_correcciones, 0)            AS num_correcciones,
+    COALESCE(c.num_correcciones, 0) > 0        AS tiene_correccion,
+    COALESCE(c.cancelado, FALSE)               AS cancelado
+FROM viajes v
+LEFT JOIN LATERAL (
+    SELECT
+        (array_agg(cc.valor_nuevo ORDER BY cc.aplicada_en DESC, cc.id DESC)
+            FILTER (WHERE cc.campo = 'pasajeros'))[1]     AS pasajeros,
+        (array_agg(cc.valor_nuevo ORDER BY cc.aplicada_en DESC, cc.id DESC)
+            FILTER (WHERE cc.campo = 'distancia'))[1]     AS distancia,
+        (array_agg(cc.valor_nuevo ORDER BY cc.aplicada_en DESC, cc.id DESC)
+            FILTER (WHERE cc.campo = 'propina'))[1]       AS propina,
+        (array_agg(cc.valor_nuevo ORDER BY cc.aplicada_en DESC, cc.id DESC)
+            FILTER (WHERE cc.campo = 'importe_total'))[1] AS importe_total,
+        COUNT(*) FILTER (WHERE cc.tipo = 'correccion')     AS num_correcciones,
+        bool_or(cc.tipo = 'cancelacion')                   AS cancelado
+      FROM correcciones cc
+     WHERE cc.viaje_id = v.id
+) c ON TRUE;
+
+
+-- =====================================================================
+-- E6: VIAJE EN EL TIEMPO. Como el historico es un log de eventos que
+-- nunca se modifica, el estado de los datos en CUALQUIER instante pasado
+-- se puede reconstruir: basta con aplicar solo las correcciones hechas
+-- hasta ese momento. Responde a "¿cuanto facturabamos antes de que el
+-- proveedor corrigiera el viaje 411?" sin guardar copias ni snapshots.
+--
+-- Funcion SQL con permisos del invocador: el RLS se aplica igual que en
+-- la vista vigente (cada empresa solo reconstruye su propio pasado).
+-- =====================================================================
+
+CREATE OR REPLACE FUNCTION viajes_en(p_instante TIMESTAMPTZ)
+RETURNS TABLE (
+    id BIGINT, empresa_id TEXT, pickup_ts TIMESTAMP, pu_location_id INTEGER,
+    tipo_pago INTEGER, pasajeros NUMERIC, distancia NUMERIC, propina NUMERIC,
+    importe_total NUMERIC, tiene_correccion BOOLEAN, cancelado BOOLEAN
+) AS $$
+    SELECT v.id, v.empresa_id, v.pickup_ts, v.pu_location_id, v.tipo_pago,
+           COALESCE(c.pasajeros, v.pasajeros), COALESCE(c.distancia, v.distancia),
+           COALESCE(c.propina, v.propina), COALESCE(c.importe_total, v.importe_total),
+           COALESCE(c.num_correcciones, 0) > 0, COALESCE(c.cancelado, FALSE)
+      FROM viajes v
+      LEFT JOIN LATERAL (
+          SELECT
+              (array_agg(cc.valor_nuevo ORDER BY cc.aplicada_en DESC, cc.id DESC)
+                  FILTER (WHERE cc.campo = 'pasajeros'))[1]     AS pasajeros,
+              (array_agg(cc.valor_nuevo ORDER BY cc.aplicada_en DESC, cc.id DESC)
+                  FILTER (WHERE cc.campo = 'distancia'))[1]     AS distancia,
+              (array_agg(cc.valor_nuevo ORDER BY cc.aplicada_en DESC, cc.id DESC)
+                  FILTER (WHERE cc.campo = 'propina'))[1]       AS propina,
+              (array_agg(cc.valor_nuevo ORDER BY cc.aplicada_en DESC, cc.id DESC)
+                  FILTER (WHERE cc.campo = 'importe_total'))[1] AS importe_total,
+              COUNT(*) FILTER (WHERE cc.tipo = 'correccion')     AS num_correcciones,
+              bool_or(cc.tipo = 'cancelacion')                   AS cancelado
+            FROM correcciones cc
+           WHERE cc.viaje_id = v.id AND cc.aplicada_en <= p_instante
+      ) c ON TRUE
+     WHERE v.ingerido_en <= p_instante
+$$ LANGUAGE sql STABLE;
 
 
 -- =====================================================================
@@ -293,7 +458,8 @@ CREATE INDEX idx_auditoria_ts ON auditoria_accesos (ts DESC);
 -- E7: Row Level Security.
 -- Segunda linea de defensa: aunque una consulta de la API olvidara
 -- filtrar por empresa, Postgres no devuelve filas de otras empresas.
--- La API fija app.empresa_id en cada transaccion a partir del JWT.
+-- La API fija app.empresa_id y app.rol en cada transaccion a partir
+-- del JWT.
 -- =====================================================================
 
 ALTER TABLE viajes            ENABLE ROW LEVEL SECURITY;
@@ -314,8 +480,9 @@ CREATE POLICY p_viajes_select ON viajes
     USING (empresa_id = current_setting('app.empresa_id', TRUE)
            OR current_setting('app.rol', TRUE) = 'auditor');
 
--- Correcciones: se leen con el mismo criterio y solo se pueden insertar
--- a nombre de la propia empresa (ni siquiera el auditor escribe aqui).
+-- Correcciones: se leen con el mismo criterio. Solo un OPERADOR puede
+-- insertarlas, y solo a nombre de su propia empresa: el auditor lee
+-- todo pero no escribe nada (tercera barrera, tras la API y la FK).
 CREATE POLICY p_correcciones_select ON correcciones
     FOR SELECT
     USING (empresa_id = current_setting('app.empresa_id', TRUE)
@@ -323,7 +490,8 @@ CREATE POLICY p_correcciones_select ON correcciones
 
 CREATE POLICY p_correcciones_insert ON correcciones
     FOR INSERT
-    WITH CHECK (empresa_id = current_setting('app.empresa_id', TRUE));
+    WITH CHECK (empresa_id = current_setting('app.empresa_id', TRUE)
+                AND current_setting('app.rol', TRUE) = 'operador');
 
 -- Metricas: lectura con el criterio de empresa; escritura acotada a la
 -- propia empresa, que es lo unico que necesita el recalculo incremental.
@@ -341,12 +509,13 @@ CREATE POLICY p_metricas_delete ON metricas_diarias
     USING (empresa_id = current_setting('app.empresa_id', TRUE));
 
 
--- Permisos del rol de aplicacion
+-- Permisos del rol de aplicacion (minimos: sin UPDATE ni DELETE sobre
+-- hechos ni correcciones)
 GRANT USAGE ON SCHEMA public TO pids_app;
-GRANT SELECT ON zonas, empresas, usuarios, v_viajes_vigentes TO pids_app;
+GRANT SELECT ON zonas, empresas, usuarios, ingestas, v_viajes_vigentes TO pids_app;
 GRANT SELECT ON viajes TO pids_app;
 GRANT SELECT, INSERT ON correcciones TO pids_app;
-GRANT SELECT, INSERT, UPDATE, DELETE ON metricas_diarias TO pids_app;
+GRANT SELECT, INSERT, DELETE ON metricas_diarias TO pids_app;
 GRANT SELECT, INSERT ON auditoria_accesos TO pids_app;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO pids_app;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO pids_app;

@@ -1,19 +1,11 @@
-# Configuracion local con secretos: NUNCA se sube
 .env
-
-# Python
 __pycache__/
 *.pyc
 .pytest_cache/
 .venv/
-venv/
-
-# Volcados y datos locales
-dump.rdb
-*.log
-
-# Editores y sistema
-.vscode/
-.idea/
+llm/salida/
+llm/llama.cpp/
+llm/modelo/*.gguf
 .DS_Store
 Thumbs.db
+*.zip

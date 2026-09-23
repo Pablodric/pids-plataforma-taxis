@@ -9,8 +9,35 @@ conversacional, desarrollada para las restricciones:
   pero cada una solo ve sus propios datos.
 
 Los datos son **reales**: 999 viajes del dataset público *2020 Yellow Taxi Trip
-Data* de la ciudad de Nueva York, enriquecidos con el catálogo oficial de las
-265 zonas de la TLC.
+Data* de la ciudad de Nueva York (importes en **dólares**), enriquecidos con el
+catálogo oficial de las 265 zonas de la TLC.
+
+El asistente entiende las frases con un **modelo de lenguaje local afinado**
+(Qwen2.5 + LoRA, servido por Ollama). Sin API de pago y sin que los datos salgan
+de la máquina. Cómo se entrena y se evalúa: [`llm/README.md`](llm/README.md).
+
+![Arquitectura](docs/arquitectura.png)
+
+### Lo que la distingue
+
+- **Viaje en el tiempo.** Las cifras de cualquier instante pasado se
+  reconstruyen desde el log de eventos, sin snapshots. Pulsando «⏱ ver cifras
+  de antes» en el historial, o preguntando *«¿cuánto facturábamos antes de la
+  última corrección?»*.
+- **Historial a prueba de manipulaciones.** Cadena SHA-256 por empresa: si
+  alguien altera una corrección, incluso como superusuario de la base de datos,
+  el panel lo marca en rojo.
+- **Aislamiento en tres barreras** (API, FK compuesta, Row Level Security),
+  probado atacando la base de datos directamente con SQL.
+- **Invariante verificado.** El cubo de métricas incremental se compara con un
+  recálculo completo desde el log (`/metricas/calidad`).
+- **Medido, no supuesto.** Hay una prueba de carga «vecino ruidoso» con números
+  reales, métricas Prometheus, `X-Request-ID` de extremo a extremo y CI con
+  lint, 100 pruebas y cobertura mínima del 80 %.
+- **Decisiones documentadas** como ADR ([`docs/adr/`](docs/adr/)), incluidas
+  las consecuencias negativas.
+
+> Qué ha cambiado respecto a versiones anteriores y por qué: [`CAMBIOS.md`](CAMBIOS.md).
 
 ---
 
@@ -19,12 +46,19 @@ Data* de la ciudad de Nueva York, enriquecidos con el catálogo oficial de las
 Requisitos: Docker Desktop instalado y arrancado (que ponga *Engine running*).
 
 ```bash
-cp .env.example .env     # en PowerShell:  copy .env.example .env
 docker compose up --build
 ```
 
-Y ya está. No hay más pasos: la primera vez el arranque crea la base de datos,
-aplica el esquema, carga el CSV y calcula las métricas iniciales.
+Y ya está. El fichero `.env` es **opcional**. La primera vez el arranque crea la
+base de datos, aplica el esquema, carga el CSV, calcula las métricas iniciales
+y prepara el modelo de lenguaje en Ollama:
+
+- si has copiado el modelo afinado en `llm/modelo/` (ver [`llm/README.md`](llm/README.md)),
+  lo instala como `pids-nlu`;
+- si no, descarga el modelo base `qwen2.5:1.5b` (~1 GB, solo la primera vez).
+
+La plataforma **no espera** a esa descarga: mientras tanto el chat responde con
+las reglas, y la cabecera del panel indica en cada momento qué motor responde.
 
 Cuando termine, abre en el navegador:
 
@@ -33,135 +67,158 @@ Cuando termine, abre en el navegador:
 | http://localhost:8080 | **Panel web**: chat, gráficas y correcciones |
 | http://localhost:8000/docs | Documentación interactiva de la API |
 | http://localhost:8000/salud | Estado de los componentes |
-| http://localhost:8000/metricas/calidad | Las tres métricas de calidad |
+| http://localhost:8000/metricas/calidad | Métricas de calidad y calidad de la ingesta |
+
+El panel habla con la API a través de nginx (`/api`, mismo origen), así que
+también funciona desde otro equipo de la red y **sin conexión a internet**
+(Chart.js va incluido en `web/vendor/`).
 
 ### Usuarios de prueba
 
-Contraseña para todos: `demo1234`
+Contraseña para todos: `demo1234`. En el panel basta con pulsar el usuario.
 
 | Correo | Empresa | Rol | Qué puede hacer |
 |---|---|---|---|
 | `ana@taxisnorte.es` | Taxis del Norte | usuario | Consultar sus métricas |
-| `luis@taxisnorte.es` | Taxis del Norte | operador | Además, registrar correcciones |
+| `luis@taxisnorte.es` | Taxis del Norte | operador | Además, corregir y cancelar viajes |
 | `marta@movilidadsur.es` | Movilidad Sur | usuario | Consultar sus métricas |
-| `pablo@movilidadsur.es` | Movilidad Sur | operador | Además, registrar correcciones |
-| `auditor@plataforma.es` | Plataforma | auditor | Además, métricas globales |
+| `pablo@movilidadsur.es` | Movilidad Sur | operador | Además, corregir y cancelar viajes |
+| `auditor@plataforma.es` | Plataforma | auditor | Ver todas las empresas, **solo lectura** |
 
-### El chatbot no depende de ningún proveedor de pago
+### Motores del chatbot
 
-El motor de diálogo tiene cuatro modos y se elige con una variable del
-`.env`. En los cuatro se usan **las mismas herramientas y la misma capa de
-datos**, así que E6 y E7 se comportan igual: el aislamiento y las correcciones
-viven en la base de datos, no en el modelo.
+| `LLM_PROVEEDOR` | Qué entiende las frases | Cuándo usarlo |
+|---|---|---|
+| `ollama` (por defecto) | Modelo local afinado `pids-nlu`, o el base `qwen2.5:1.5b` mientras no lo entrenes | Lo normal |
+| `reglas` | NLU por reglas en español (`api/app/nlu.py`) | Equipos muy justos de memoria |
+| `anthropic` | Agente con *function calling* sobre la API de Anthropic (`LLM_API_KEY`) | Si tienes clave |
 
-| Modo | Coste | Clave | Cuándo usarlo |
-|---|---|---|---|
-| `reglas` | Ninguno | No | Por defecto. NLU propio por palabras clave. Funciona sin internet. |
-| `ollama` | Ninguno | No | Modelo abierto en un contenedor propio. Los datos no salen de la plataforma. |
-| `openai` | Gratis o de pago | Sí | Cualquier API compatible con OpenAI: Groq y Gemini tienen nivel gratuito. |
-| `anthropic` | De pago | Sí | API de Anthropic. |
+En los tres, las cifras salen de la base de datos, cada corrección pide
+confirmación y el aislamiento entre empresas no depende del modelo. Si el
+modelo falla (no responde, tarda o devuelve algo inválido), ese mensaje lo
+atienden las reglas.
 
-**Sin tocar nada arranca en modo reglas**, así que el proyecto se puede evaluar
-entero — los nueve casos de uso, E6, E7 y las 22 pruebas — sin registrarse en
-ningún sitio ni gastar un céntimo.
-
-**Para usar un LLM local y gratuito** (la opción recomendada, porque es
-coherente con el resto del despliegue self-hosted):
-
-```bash
-docker compose --profile ollama up
-```
-
-y en el `.env`:
-
-```
-LLM_PROVEEDOR=ollama
-OLLAMA_MODELO=qwen2.5:3b
-```
-
-La primera vez descarga unos 2 GB; después ya lo tiene en un volumen. En un
-portátil sin GPU tarda algunos segundos por respuesta, que para una
-demostración es perfectamente aceptable.
-
-**Para usar un proveedor externo con nivel gratuito** (Groq, por ejemplo):
-
-```
-LLM_PROVEEDOR=openai
-LLM_API_KEY=tu-clave
-LLM_BASE_URL=https://api.groq.com/openai/v1
-LLM_MODELO=llama-3.3-70b-versatile
-```
-
-Si el proveedor elegido falla en caliente — sin crédito, contenedor parado, red
-caída — la petición **se resuelve igualmente en modo reglas** y la respuesta
-indica desde qué proveedor se degradó. El panel muestra en la cabecera qué
-motor está activo en cada momento.
+Para cambiar de motor: `LLM_PROVEEDOR=reglas docker compose up`, o ponlo en `.env`.
 
 ---
 
 ## 2. Guion de demostración
 
-Cuatro escenas que enseñan las dos restricciones. Sirven tal cual para el vídeo
+Cinco escenas que enseñan las dos restricciones. Sirven tal cual para el vídeo
 o las capturas de la entrega.
 
 ### Escena 1 — Aislamiento entre empresas (E7)
 
-1. Entra como **ana@taxisnorte.es** y pregunta *"¿cuántos viajes tenemos?"* →
+1. Entra como **ana@taxisnorte.es** y pregunta *«¿cuántos viajes tenemos?»* →
    400 viajes.
-2. Pregunta *"dame los datos de Movilidad Sur"* → el bot responde que no tiene
-   acceso a esa empresa.
+2. Pulsa la sugerencia *«Dame los datos de Movilidad Sur»* → el bot responde
+   que no tiene acceso a esa empresa.
 3. Sal y entra como **marta@movilidadsur.es**, misma pregunta → 599 viajes.
    Las gráficas del panel también cambian: son otros datos.
 
 ### Escena 2 — Una corrección se propaga (E6)
 
-1. Entra como **luis@taxisnorte.es** (operador).
-2. Anota el importe medio que muestra el panel.
-3. En *Registrar corrección*: elige un viaje, campo **Importe total**, pon un
-   valor claramente distinto (por ejemplo 150) y un motivo.
-4. Pulsa **Aplicar corrección**: los KPI y las gráficas se actualizan solos, y
-   el indicador *corregidos / cancelados* sube.
-5. Pregunta al chat *"¿por qué ha cambiado esa cifra?"* → devuelve valor
-   original, valor nuevo, motivo, autor y momento exacto.
+1. Entra como **luis@taxisnorte.es** (operador) y anota la facturación total.
+2. En *Registrar corrección*: elige un viaje, campo **Importe total**, pon un
+   valor claramente distinto (por ejemplo `150`) y un motivo. El formulario
+   muestra el valor vigente antes de cambiarlo.
+3. Pulsa **Aplicar corrección**: los KPI se actualizan (parpadean en verde los
+   que cambian) y el indicador *corregidos / cancelados* sube.
+4. Pregunta al chat *«¿por qué ha cambiado esa cifra?»* → devuelve valor
+   anterior, valor nuevo, motivo, autor y momento exacto.
 
-### Escena 3 — Cancelación sin perder historial (E6)
+### Escena 3 — Corregir hablando con el asistente (E6)
 
-1. Con el mismo usuario, pulsa **Cancelar este viaje** con un motivo.
-2. El número de viajes baja en uno, pero el viaje sigue apareciendo en el
-   historial de correcciones, tachado. No se ha borrado nada.
+1. Con el mismo usuario escribe *«el viaje 411 tenía mal la tarifa, eran
+   23,50»* (o pulsa la sugerencia *«Corrige el viaje …»*).
+2. El asistente resume el cambio (valor actual → nuevo, motivo) y pide
+   confirmación con botones **Sí / No**. No escribe nada hasta confirmar.
+3. Pulsa **Sí** → se registra, y el panel se actualiza solo.
+4. *«Detalle del viaje 411»* → ficha con valores originales, vigentes y la
+   cadena completa de cambios.
 
-### Escena 4 — Roles y cuota (E7)
+### Escena 4 — Cancelación sin perder historial (E6)
 
-1. Como **ana** (usuario), pide *"dame las métricas globales"* → denegado.
-2. Entra como **auditor@plataforma.es** y repite → ahora sí, con el desglose de
-   las dos empresas.
-3. Para enseñar el límite de recursos, lanza muchas consultas seguidas desde una
-   empresa: a partir de la cuota responde `429` y la otra empresa sigue
-   funcionando con normalidad.
+1. *«Cancela el viaje 411, el cliente anuló el servicio»* → confirma.
+   (O desde el formulario, botón **Cancelar viaje**.)
+2. El número de viajes baja en uno, pero el viaje sigue en el historial de
+   correcciones. No se ha borrado nada, y no se puede cancelar dos veces.
+
+### Escena 5 — Roles y cuota (E7)
+
+1. Como **ana** (usuario), pide *«dame las métricas globales»* → denegado.
+2. Entra como **auditor@plataforma.es** → el panel muestra la comparativa entre
+   empresas, pero **no** el formulario de correcciones: el auditor lo ve todo
+   y no puede modificar nada (ni por el panel, ni por el chat, ni por la API).
+3. El contador *cuota* de la cabecera muestra el consumo de la empresa. Para
+   enseñar el límite, lanza muchas consultas seguidas desde una empresa: a
+   partir de la cuota responde `429` y la otra empresa sigue funcionando.
+   Con números: `python scripts/vecino_ruidoso.py --url http://localhost:8080/api`
+   (resultados en el [ADR 0007](docs/adr/0007-cuota-en-dos-capas.md)).
+
+### Escena 6 — Viaje en el tiempo y manipulación detectada (E6)
+
+1. Como **luis**, haz dos correcciones y pulsa **⏱ ver cifras de antes** en el
+   historial: el panel reconstruye las métricas de ese instante (entonces /
+   ahora / diferencia) sin copias guardadas.
+2. Fíjate en el sello **🔒 Cadena íntegra** del historial. Ahora simula a un
+   administrador deshonesto que edita una corrección a mano:
+   ```bash
+   docker compose exec db psql -U postgres -d pids -c "ALTER TABLE correcciones DISABLE TRIGGER USER; UPDATE correcciones SET valor_nuevo = 1 WHERE id = (SELECT min(id) FROM correcciones); ALTER TABLE correcciones ENABLE TRIGGER USER;"
+   ```
+3. Recarga el panel: el sello pasa a **⚠ Cadena rota**, con el eslabón y el
+   motivo («su contenido no coincide con su hash»). `GET /auditoria/cadena`
+   da el detalle.
+
+### Observabilidad
+
+- `http://localhost:8000/metrics`: formato Prometheus, con latencias por ruta
+  (histograma), rechazos 429 por empresa, correcciones, mensajes por motor
+  NLU e intentos de login bloqueados.
+- Cada respuesta lleva `X-Request-ID`, el mismo que nginx y el que aparece en
+  los logs JSON de la API (`docker compose logs api`).
 
 ---
 
 ## 3. Comprobar que funciona de verdad
 
-Hay 22 pruebas automáticas que se ejecutan contra la API y la base de datos
-reales, no contra simulaciones:
+Hay **100 pruebas automáticas** (cobertura del 85 %, `ruff` sin avisos) que se ejecutan contra la API, el Postgres y el
+Redis reales, no contra simulaciones. La única excepción es el modelo de
+lenguaje: se sustituye por un servidor que habla el protocolo de Ollama, para
+probar la integración sin descargar un modelo. La calidad del modelo se mide
+aparte, con `llm/evaluar.py`.
 
 ```bash
-docker compose exec -e PYTHONPATH=/srv api python -m pytest /srv/tests -v
+docker compose exec -e PYTHONPATH=/srv api python -m pytest /srv/tests -v -p no:cacheprovider
 ```
 
 Las pruebas cubren, entre otras cosas:
 
 - Que las dos empresas ven conjuntos de viajes **disjuntos**, y que sus totales
-  suman exactamente lo ingerido (ni de más ni de menos).
-- Que un operador **no puede corregir un viaje de otra empresa** (recibe el
-  mismo 404 que si el viaje no existiera, para no revelar que existe).
-- Que una corrección **conserva el valor original** con motivo, autor y momento.
-- Que una cancelación **saca el viaje de las métricas pero no del historial**.
-- Que la **cuota por empresa** se aplica y no afecta a las demás empresas.
-- Que el **catálogo de herramientas se recorta según el rol**, y que ninguna
-  expone un parámetro de empresa al modelo.
-- Que **si el proveedor de LLM se cae**, la plataforma sigue respondiendo.
+  suman exactamente lo ingerido.
+- Que un operador **no puede corregir un viaje de otra empresa**, ni por la API
+  (mismo 404 que un viaje inexistente) ni saltándose la API con SQL directo
+  (lo impide la FK compuesta en la base de datos).
+- Que el **auditor no puede escribir**, tampoco por SQL (política RLS).
+- Que el historial es de **solo-añadir**: no se puede editar ni borrar.
+- Que una corrección **conserva el valor anterior** con motivo, autor y momento,
+  y que dos correcciones seguidas dejan la cadena v0 → v1 → v2.
+- Que una cancelación **saca el viaje de las métricas pero no del historial**, y
+  que no se puede cancelar dos veces.
+- Que la **cuota por empresa** se aplica, es atómica con 40 peticiones
+  simultáneas y que el panel solo gasta una unidad por refresco.
+- Que el chatbot **pide confirmación** antes de escribir, entiende fechas y
+  preguntas de seguimiento, y que un fallo del modelo no duplica una corrección.
+- Que con Ollama se envía el esquema JSON y el prompt exacto del entrenamiento,
+  que un viaje **inventado por el modelo se descarta**, y que si Ollama no
+  responde o devuelve algo inválido el chat sigue funcionando con reglas.
+- Que las cifras del pasado se reconstruyen bien (antes y después de una
+  corrección o cancelación) y que el pasado también está aislado por empresa.
+- Que la cadena de hashes detecta borrados y modificaciones, incluida una
+  manipulación **real como superusuario**. Se ejecuta en CI y si defines
+  `DATABASE_URL_ADMIN`.
+- Que el cubo incremental coincide con un recálculo completo, que `/metrics` no
+  usa ids en las etiquetas y que el login se bloquea tras 5 fallos.
 
 ---
 
@@ -169,27 +226,47 @@ Las pruebas cubren, entre otras cosas:
 
 ```
 .
-├── docker-compose.yml       Orquestación de los 5 servicios
-├── .env.example             Plantilla de configuración
+├── docker-compose.yml       Orquestación de los 7 servicios (con ollama y ollama-init)
+├── docker-compose.gpu.yml   Opcional: Ollama con GPU NVIDIA
+├── .env.example             Plantilla de configuración (opcional)
+├── CAMBIOS.md               Qué se corrigió en la v3 y por qué
 ├── db/init/01_esquema.sql   Esquema, vista vigente, RLS y recálculo incremental
 ├── ingest/                  Carga inicial del CSV y del catálogo de zonas
-│   ├── ingesta.py
+│   ├── ingesta.py           Con huella SHA-256 e informe de anomalías
 │   └── datos/
 │       ├── rows.csv                 999 viajes (TLC 2020)
 │       └── taxi_zone_lookup.csv     265 zonas oficiales de NYC
 ├── api/app/
 │   ├── main.py              Rutas HTTP
-│   ├── auth.py              JWT, roles y verificación de contraseña (E7)
-│   ├── cuotas.py            Límite de consumo por empresa (E7)
+│   ├── auth.py              JWT y permisos por rol (E7)
+│   ├── cuotas.py            Límite de consumo por empresa, atómico en Redis (E7)
 │   ├── db.py                Pool de conexiones y contexto RLS
 │   ├── repositorio.py       Todo el SQL de negocio
 │   ├── herramientas.py      Catálogo de funciones del chatbot, recortado por rol
-│   ├── motor.py             Despachador de motor + NLU por reglas
-│   ├── proveedor_openai.py  Bucle para Ollama, Groq, Gemini y OpenAI
-│   └── proveedor_anthropic.py  Bucle para la API de Anthropic
-├── web/index.html           Panel de chat, gráficas y correcciones
-├── tests/                   22 pruebas de E6, E7 y del motor
+│   ├── esquema_nlu.py       Contrato JSON del NLU (modelo, dataset y evaluación)
+│   ├── nlu_llm.py           NLU con el modelo de Ollama: esquema, validación y anclaje
+│   ├── nlu.py               NLU por reglas (respaldo y referencia de evaluación)
+│   ├── observabilidad.py    Métricas Prometheus, X-Request-ID y logs JSON
+│   └── motor.py             Gestión del diálogo: confirmaciones, contexto y motores
+├── llm/                     Fine-tuning del modelo (ver llm/README.md)
+│   ├── generar_dataset.py   Dataset sintético con test de plantillas no vistas
+│   ├── entrenar.py          LoRA sobre Qwen2.5-Instruct
+│   ├── entrenar_colab.ipynb Todo el proceso en una GPU gratuita de Colab
+│   ├── exportar.py          GGUF + Modelfile para Ollama
+│   ├── evaluar.py           Reglas vs modelo base vs modelo afinado
+│   ├── instalar_en_ollama.sh  Lo ejecuta el servicio ollama-init
+│   ├── datos/               Dataset generado (train/val/test)
+│   └── modelo/              Aquí va el modelo afinado (pids-nlu.gguf + Modelfile)
+├── nginx/default.conf       Servidor del panel y proxy /api
+├── web/
+│   ├── index.html           Panel de chat, gráficas y correcciones
+│   └── vendor/chart.umd.js  Chart.js 4.4.1 (MIT), para no depender de internet
+├── tests/                   100 pruebas de E6, E7, chatbot, Ollama, auditoría y observabilidad
+├── scripts/vecino_ruidoso.py  Prueba de carga: ¿nota una empresa el abuso de otra?
+├── .github/workflows/       CI: ruff, pruebas con cobertura, build y arranque con Docker
 └── docs/
+    ├── arquitectura.png     Diagrama (se regenera con docs/diagramas/arquitectura.py)
+    ├── adr/                 Registro de decisiones de arquitectura (7 ADR)
     ├── arquitectura.md      Componentes y por qué cada tecnología
     ├── decisiones-e6-e7.md  Cómo se cumple cada requisito del enunciado
     └── casos-de-uso.md      Los casos de uso del chatbot
@@ -202,20 +279,35 @@ Las pruebas cubren, entre otras cosas:
 **`error during connect... docker_engine`** — Docker Desktop no está arrancado.
 Ábrelo y espera a que ponga *Engine running*.
 
-**`LLM_API_KEY variable is not set`** — falta el fichero `.env`. Docker Compose
-solo lee un fichero llamado exactamente `.env`; `.env.example` es la plantilla.
-Es solo un aviso: el chatbot arranca igual en modo reglas.
+**`port is already allocated`** — algo en tu equipo ya usa el puerto 8000 u
+8080. Cambia el número de la izquierda en `docker-compose.yml` (por ejemplo
+`"8081:80"`). Postgres y Redis ya no publican puertos, así que un Postgres
+instalado en tu equipo no interfiere.
 
-**El modo Ollama tarda mucho en la primera respuesta** — está descargando el
-modelo. Míralo con `docker compose logs ollama-modelo`. Cuando ese contenedor
-termine, las respuestas ya son normales.
+**El panel dice que no encuentra la API** — la API tarda unos segundos en
+arrancar la primera vez (espera a la ingesta). Comprueba
+http://localhost:8000/salud y, si no responde, `docker compose logs api`.
 
-**El panel dice que no conecta con la API** — comprueba
-http://localhost:8000/salud. Si no responde, mira los registros con
-`docker compose logs api`.
+**Me echa al login tras reiniciar** — sin `JWT_SECRETO` en el `.env` se genera
+un secreto nuevo en cada arranque de la API, y las sesiones anteriores dejan de
+valer. Es lo esperado; pon un secreto fijo si te molesta.
 
 **Quiero empezar de cero** — `docker compose down -v` borra también el volumen
 de la base de datos, y el siguiente arranque vuelve a ingerir el CSV.
+
+**Venía de la versión anterior** — no hace falta hacer nada: el volumen tiene
+un nombre nuevo (`datos_db_v4`) y la base de datos se crea con el esquema
+actual. El volumen antiguo se puede borrar con `docker volume rm pids_datos_db`.
+
+**Inspeccionar la base de datos** — `docker compose exec db psql -U postgres -d pids`.
+
+**El chat va lento** — en CPU el modelo tarda unos segundos por mensaje. Ver
+las opciones en [`llm/README.md`](llm/README.md#6-problemas-frecuentes)
+(modelo de 0,5B, cuantizar, GPU, Ollama nativo en Mac) o usa
+`LLM_PROVEEDOR=reglas`.
+
+**¿Qué modelo está respondiendo?** — la cabecera del panel lo dice, y
+`http://localhost:8000/salud` también (`ollama.modelo`, `ollama.afinado`).
 
 ---
 
@@ -225,3 +317,11 @@ de la base de datos, y el siguiente arranque vuelve a ingerir el CSV.
   https://data.cityofnewyork.us/Transportation/2020-Yellow-Taxi-Trip-Data/kxp8-n2sj/about_data
 - **Taxi Zone Lookup Table** (265 zonas), NYC TLC —
   https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page
+
+Nota sobre la muestra: son las primeras 999 filas del fichero, casi todas del
+arranque del 1 de enero de 2020 (00:00–04:00). Por eso el panel muestra reparto
+por distrito y por método de pago en lugar de la curva horaria, que con esta
+muestra no es representativa. La ingesta detecta y registra además 3 viajes
+con fecha fuera de 2020, 4 con importe negativo y 12 con distancia cero: se
+cargan igualmente (son hechos tal y como los envió el proveedor) y E6 permite
+corregirlos.
