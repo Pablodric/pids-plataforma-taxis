@@ -1,5 +1,10 @@
 # Casos de uso del agente conversacional
 
+![Flujo de una conversación](flujo_chatbot.png)
+
+El recorrido completo de un mensaje (autenticación, cuota, NLU, confirmaciones y
+respuesta) está en el diagrama; se regenera con `docs/diagramas/flujo_chatbot.py`.
+
 Once casos de uso, todos contra los datos reales almacenados y procesados en la
 Parte 2. Los marcados con **E6** o **E7** existen específicamente por la
 restricción del equipo.

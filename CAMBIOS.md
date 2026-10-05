@@ -1,3 +1,25 @@
+# Cambios de la versión 5.2: datos sintéticos
+
+| Qué | Para qué |
+|---|---|
+| `scripts/generar_datos_sinteticos.py` (84 líneas, sin dependencias) | Generar N viajes a partir de los reales: otro día de 2020, distancia y tarifa ±20 %, propina ±30 %, zonas con su peso real. Conserva la empresa y las anomalías; el total cuadra con sus partes |
+| `DATOS_VIAJES=sinteticos.csv` en la ingesta | Cargar el fichero generado sin tocar `rows.csv` ni reconstruir la imagen (`ingest/datos` va montado) |
+| `tests/test_sinteticos.py` | +5 pruebas (105 en total): reproducible con semilla, mismo esquema, fechas válidas para la ingesta, total coherente, reparto entre empresas |
+
+Probado con 10.000 viajes: la ingesta los carga (5.909 de Movilidad Sur y
+4.091 de Taxis del Norte), con 142 de distancia cero y 46 de importe
+negativo, que se pueden corregir. Se calculan 1.228 cubos de métricas y el
+chat responde a preguntas sobre cualquier día de 2020.
+
+Respecto al script original: un único modo de uso (`filas` y `--semilla`),
+fechas siempre dentro de 2020 (antes caían en el último año y la ingesta
+las marcaba como anomalías), recargos fijos que no se escalan (antes salían
+recargos de congestión de 2,11 $), un total que ya no se rehace sumando
+partes (contaba dos veces la congestión cuando la TLC la incluye en `extra`) y zonas tomadas de viajes reales en lugar
+de números al azar entre 1 y 265.
+
+---
+
 # Cambios de la versión 5: auditoría, tiempo y operación
 
 | Qué | Para qué |

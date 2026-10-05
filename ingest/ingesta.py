@@ -26,6 +26,9 @@ import psycopg
 from psycopg.rows import dict_row
 
 DIR_DATOS = Path(__file__).parent / "datos"
+# Fichero de viajes dentro de datos/. Por defecto el real; con
+# DATOS_VIAJES=sinteticos.csv, el de scripts/generar_datos_sinteticos.py.
+FICHERO_VIAJES = Path(os.environ.get("DATOS_VIAJES") or "rows.csv").name
 DSN = os.environ["DATABASE_URL_ADMIN"]
 
 # ---------------------------------------------------------------------
@@ -160,7 +163,8 @@ def detectar_anomalias(pickup, dropoff, importe, distancia) -> list[str]:
 
 def cargar_viajes(cur) -> dict:
     por_vendor = {v: emp for emp, _, v, _ in EMPRESAS if v is not None}
-    ruta = DIR_DATOS / "rows.csv"
+    ruta = DIR_DATOS / FICHERO_VIAJES
+    print(f"[ingesta] viajes de {ruta.name}")
     filas, descartadas, leidas = [], 0, 0
     anomalias: dict[str, int] = {}
 

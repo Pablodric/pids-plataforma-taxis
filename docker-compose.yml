@@ -53,6 +53,12 @@ services:
     build: ./ingest
     environment:
       DATABASE_URL_ADMIN: postgresql://postgres:postgres@db:5432/pids
+      # rows.csv (999 viajes reales) o el generado por
+      # scripts/generar_datos_sinteticos.py: DATOS_VIAJES=sinteticos.csv
+      DATOS_VIAJES: ${DATOS_VIAJES:-rows.csv}
+    # Montado para usar un CSV recien generado sin reconstruir la imagen.
+    volumes:
+      - ./ingest/datos:/ingest/datos:ro
     depends_on:
       db:
         condition: service_healthy

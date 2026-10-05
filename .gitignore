@@ -9,3 +9,6 @@ llm/modelo/*.gguf
 .DS_Store
 Thumbs.db
 *.zip
+
+# Generado por scripts/generar_datos_sinteticos.py (reproducible con su semilla)
+ingest/datos/sinteticos.csv

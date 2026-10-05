@@ -33,7 +33,7 @@ de la máquina. Cómo se entrena y se evalúa: [`llm/README.md`](llm/README.md).
   recálculo completo desde el log (`/metricas/calidad`).
 - **Medido, no supuesto.** Hay una prueba de carga «vecino ruidoso» con números
   reales, métricas Prometheus, `X-Request-ID` de extremo a extremo y CI con
-  lint, 100 pruebas y cobertura mínima del 80 %.
+  lint, 105 pruebas y cobertura mínima del 80 %.
 - **Decisiones documentadas** como ADR ([`docs/adr/`](docs/adr/)), incluidas
   las consecuencias negativas.
 
@@ -99,6 +99,24 @@ modelo falla (no responde, tarda o devuelve algo inválido), ese mensaje lo
 atienden las reglas.
 
 Para cambiar de motor: `LLM_PROVEEDOR=reglas docker compose up`, o ponlo en `.env`.
+
+### Más datos: viajes sintéticos
+
+La muestra real son 999 viajes de unas pocas horas del 1 de enero. Para
+probar con un año entero y más volumen:
+
+```bash
+python scripts/generar_datos_sinteticos.py 10000      # crea ingest/datos/sinteticos.csv
+docker compose down -v                                 # la ingesta solo carga una base vacía
+DATOS_VIAJES=sinteticos.csv docker compose up -d
+```
+
+Cada viaje sintético parte de uno real y cambia el día (dentro de 2020), la
+distancia, la tarifa, la propina y las zonas. Conserva la empresa y la
+proporción de anomalías, así que E6 y E7 se prueban igual. La misma semilla
+(`--semilla`, 42 por defecto) genera siempre el mismo fichero, que por eso no
+se sube a Git. Para volver a los datos reales: `docker compose down -v` y
+`docker compose up -d`.
 
 ---
 
@@ -170,6 +188,12 @@ o las capturas de la entrega.
    motivo («su contenido no coincide con su hash»). `GET /auditoria/cadena`
    da el detalle.
 
+### Flujo del chatbot
+
+Cómo se procesa cada mensaje: autenticación, cuota, NLU con respaldo, confirmaciones,
+viaje en el tiempo y permisos.
+[`docs/flujo_chatbot.png`](docs/flujo_chatbot.png)
+
 ### Observabilidad
 
 - `http://localhost:8000/metrics`: formato Prometheus, con latencias por ruta
@@ -182,7 +206,7 @@ o las capturas de la entrega.
 
 ## 3. Comprobar que funciona de verdad
 
-Hay **100 pruebas automáticas** (cobertura del 85 %, `ruff` sin avisos) que se ejecutan contra la API, el Postgres y el
+Hay **105 pruebas automáticas** (cobertura del 85 %, `ruff` sin avisos) que se ejecutan contra la API, el Postgres y el
 Redis reales, no contra simulaciones. La única excepción es el modelo de
 lenguaje: se sustituye por un servidor que habla el protocolo de Ollama, para
 probar la integración sin descargar un modelo. La calidad del modelo se mide
@@ -235,6 +259,7 @@ Las pruebas cubren, entre otras cosas:
 │   ├── ingesta.py           Con huella SHA-256 e informe de anomalías
 │   └── datos/
 │       ├── rows.csv                 999 viajes (TLC 2020)
+│       ├── sinteticos.csv           (generado, no se sube) ver «Más datos»
 │       └── taxi_zone_lookup.csv     265 zonas oficiales de NYC
 ├── api/app/
 │   ├── main.py              Rutas HTTP
@@ -261,11 +286,14 @@ Las pruebas cubren, entre otras cosas:
 ├── web/
 │   ├── index.html           Panel de chat, gráficas y correcciones
 │   └── vendor/chart.umd.js  Chart.js 4.4.1 (MIT), para no depender de internet
-├── tests/                   100 pruebas de E6, E7, chatbot, Ollama, auditoría y observabilidad
-├── scripts/vecino_ruidoso.py  Prueba de carga: ¿nota una empresa el abuso de otra?
+├── tests/                   105 pruebas de E6, E7, chatbot, Ollama, auditoría y observabilidad
+├── scripts/
+│   ├── vecino_ruidoso.py    Prueba de carga: ¿nota una empresa el abuso de otra?
+│   └── generar_datos_sinteticos.py  Más viajes, a partir de los reales
 ├── .github/workflows/       CI: ruff, pruebas con cobertura, build y arranque con Docker
 └── docs/
     ├── arquitectura.png     Diagrama (se regenera con docs/diagramas/arquitectura.py)
+    ├── flujo_chatbot.png    Flujo de una conversación del chatbot, paso a paso
     ├── adr/                 Registro de decisiones de arquitectura (7 ADR)
     ├── arquitectura.md      Componentes y por qué cada tecnología
     ├── decisiones-e6-e7.md  Cómo se cumple cada requisito del enunciado
@@ -324,4 +352,5 @@ por distrito y por método de pago en lugar de la curva horaria, que con esta
 muestra no es representativa. La ingesta detecta y registra además 3 viajes
 con fecha fuera de 2020, 4 con importe negativo y 12 con distancia cero: se
 cargan igualmente (son hechos tal y como los envió el proveedor) y E6 permite
-corregirlos.
+corregirlos. Para una muestra de todo el año, ver «Más datos: viajes
+sintéticos» en la puesta en marcha.
