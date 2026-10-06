@@ -104,6 +104,10 @@ class PeticionViaje(BaseModel):
     total_amount: float = Field(ge=-1000, le=10000)
 
 
+class PeticionSimulador(BaseModel):
+    activo: bool
+
+
 class PeticionCancelacion(BaseModel):
     viaje_id: int = Field(gt=0)
     motivo: str = Field(min_length=3, max_length=500)
@@ -299,6 +303,7 @@ def quien_soy(sesion: Sesion = Depends(sesion_actual)):
         "empresa_nombre": repositorio.nombre_empresa(sesion.empresa_id),
         "rol": sesion.rol,
         "puede_corregir": sesion.puede("corregir"),
+        "puede_simular": sesion.puede("corregir"),   # el operador maneja la demo
         "puede_ver_global": sesion.puede("ver_global"),
         "cuota_consultas_min": cuotas.cuota_de(sesion.empresa_id),
         "modo_chatbot": _modo_chatbot(),
@@ -553,6 +558,33 @@ def ingerir_viaje(
     obs.VIAJES_INGERIDOS.labels(sesion.empresa_id, "aceptado").inc()
     tiempo_real.publicar(sesion.empresa_id, resultado["viaje_id"], resultado["ingerido_en"])
     return resultado
+
+
+# ---------------------------------------------------------------------
+# Simulador de viajes (demo): interruptor por empresa
+# ---------------------------------------------------------------------
+
+@app.get("/simulador", tags=["simulador"])
+def simulador_estado(sesion: Sesion = Depends(sesion_actual)):
+    """Estado del interruptor de MI empresa. Lo lee el panel y tambien el simulador
+    (con su credencial de proveedor), que solo genera viajes si esta encendido."""
+    return {"activo": tiempo_real.simulador_activo(sesion.empresa_id)}
+
+
+@app.post("/simulador", tags=["simulador"])
+def simulador_fijar(
+    peticion: PeticionSimulador,
+    sesion: Sesion = Depends(exigir_permiso("corregir")),
+):
+    """Enciende o apaga la simulacion de viajes nuevos de la empresa de la sesion.
+    Escribe datos (viajes de prueba), asi que lo puede hacer el operador y no el
+    usuario ni el auditor. Queda en la auditoria de accesos."""
+    tiempo_real.fijar_simulador(sesion.empresa_id, peticion.activo)
+    repositorio.registrar_auditoria(
+        sesion.email, sesion.empresa_id,
+        "simulador_encendido" if peticion.activo else "simulador_apagado", "", True,
+    )
+    return {"activo": peticion.activo}
 
 
 # ---------------------------------------------------------------------

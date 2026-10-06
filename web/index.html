@@ -53,6 +53,9 @@
   .etiqueta.vivo{background:#1D7A54;color:#fff}
   .etiqueta.vivo.reconectando{background:#E8A33D;color:#2B1B00}
   header .hueco{flex:1}
+  .btn-sim{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.45);padding:5px 12px;font-size:12.5px}
+  .btn-sim.encendido{background:#1D7A54;border-color:#1D7A54}
+  .btn-sim:disabled{opacity:.6;cursor:wait}
   .btn-salir{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.3);padding:6px 14px}
 
   main{max-width:1320px;margin:0 auto;padding:22px;
@@ -190,6 +193,8 @@
     <span class="etiqueta cuota" id="et-cuota" title="Consultas disponibles en la ventana actual (cuota por empresa, E7)"></span>
     <span class="etiqueta vivo" id="et-vivo" hidden></span>
     <span class="hueco"></span>
+    <button class="btn-sim" id="btn-sim" type="button" onclick="alternarSimulador()" hidden
+            title="Demo: genera viajes nuevos de tu empresa cada pocos segundos">▶ Simular viajes</button>
     <span class="etiqueta" id="et-email"></span>
     <button class="btn-salir" onclick="salir()">Salir</button>
   </header>
@@ -428,6 +433,7 @@ function salir(motivo) {
   if (token && sessionId) fetch(API + "/chat/" + encodeURIComponent(sessionId),
     {method: "DELETE", headers: {Authorization: "Bearer " + token}}).catch(() => {});
   pararTiempoReal();
+  document.getElementById("btn-sim").hidden = true;
   token = null; perfil = null; ultimoPanel = null;
   almacen.del("pids_token");
   sessionId = nuevoId();
@@ -475,6 +481,7 @@ async function iniciarSesion() {
     "\nEscribe «ayuda» para ver ejemplos.", "bot", "Asistente");
   await refrescarPanel();
   iniciarTiempoReal();
+  cargarSimulador();
   pintarSugerencias();
   document.getElementById("mensaje").focus();
 }
@@ -674,6 +681,38 @@ function pararTiempoReal() {
   refrescoPendiente = null; refrescoAplazado = false; wsEspera = 1000;
   if (ws) { ws.onclose = null; ws.close(); ws = null; }
   pintarVivo(null);
+}
+
+/* ---------------- simulador de viajes (demo, solo operador) ---------------- */
+let simActivo = false;
+
+function pintarSimulador() {
+  const b = document.getElementById("btn-sim");
+  b.hidden = false;
+  b.classList.toggle("encendido", simActivo);
+  b.textContent = simActivo ? "■ Parar simulación" : "▶ Simular viajes";
+}
+
+async function cargarSimulador() {
+  const b = document.getElementById("btn-sim");
+  b.hidden = true;
+  if (!perfil?.puede_simular) return;
+  try { simActivo = (await api("/simulador")).activo; } catch (_) { return; }
+  pintarSimulador();
+}
+
+async function alternarSimulador() {
+  const b = document.getElementById("btn-sim");
+  b.disabled = true;
+  try {
+    simActivo = (await api("/simulador", {method: "POST",
+      body: JSON.stringify({activo: !simActivo})})).activo;
+    pintarSimulador();
+  } catch (ex) {
+    if (ex.estado !== 401) añadirMensaje("No se pudo cambiar la simulación: " + ex.message, "err");
+  } finally {
+    b.disabled = false;
+  }
 }
 
 /* ---------------- panel de datos (una sola peticion) ---------------- */
