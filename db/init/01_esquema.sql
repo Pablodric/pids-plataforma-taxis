@@ -44,7 +44,9 @@ CREATE TABLE usuarios (
     -- 'operador'   -> ademas puede registrar correcciones (E6)
     -- 'auditor'    -> consulta metricas globales (E7), pero NO escribe:
     --                 quien audita no debe poder alterar lo auditado
-    rol         TEXT NOT NULL CHECK (rol IN ('usuario', 'operador', 'auditor')),
+    -- 'proveedor'  -> cuenta de maquina de la empresa: SOLO envia viajes
+    --                 nuevos (ingesta en tiempo real); no consulta ni corrige
+    rol         TEXT NOT NULL CHECK (rol IN ('usuario', 'operador', 'auditor', 'proveedor')),
     -- Guardamos hash, nunca la contrasena en claro
     password_hash TEXT NOT NULL,
     activo      BOOLEAN NOT NULL DEFAULT TRUE
@@ -436,6 +438,30 @@ CREATE TRIGGER correccion_recalcula
     FOR EACH ROW EXECUTE FUNCTION trg_correccion_recalcula();
 
 
+-- Ingesta en tiempo real: cuando entra un viaje nuevo se recalcula SOLO
+-- su cubo, igual que con una correccion. La carga inicial del CSV fija
+-- app.carga_masiva = '1' para saltarse este paso fila a fila y calcular
+-- todos los cubos una unica vez al final (recalcular_todo).
+CREATE OR REPLACE FUNCTION trg_viaje_recalcula() RETURNS TRIGGER AS $$
+DECLARE
+    v_borough TEXT;
+BEGIN
+    IF current_setting('app.carga_masiva', TRUE) = '1' THEN
+        RETURN NEW;
+    END IF;
+    SELECT z.borough INTO v_borough FROM zonas z WHERE z.location_id = NEW.pu_location_id;
+    IF v_borough IS NOT NULL THEN
+        PERFORM recalcular_cubo(NEW.empresa_id, NEW.pickup_ts::date, v_borough);
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER viaje_recalcula
+    AFTER INSERT ON viajes
+    FOR EACH ROW EXECUTE FUNCTION trg_viaje_recalcula();
+
+
 -- =====================================================================
 -- Auditoria de accesos: alimenta la metrica de calidad "aislamiento"
 -- =====================================================================
@@ -480,6 +506,14 @@ CREATE POLICY p_viajes_select ON viajes
     USING (empresa_id = current_setting('app.empresa_id', TRUE)
            OR current_setting('app.rol', TRUE) = 'auditor');
 
+-- E7: un viaje nuevo solo puede entrar a nombre de la empresa de la sesion,
+-- y solo desde su cuenta de proveedor. Aunque la API tuviera un fallo, una
+-- empresa no puede insertar viajes a nombre de otra.
+CREATE POLICY p_viajes_insert ON viajes
+    FOR INSERT
+    WITH CHECK (empresa_id = current_setting('app.empresa_id', TRUE)
+                AND current_setting('app.rol', TRUE) = 'proveedor');
+
 -- Correcciones: se leen con el mismo criterio. Solo un OPERADOR puede
 -- insertarlas, y solo a nombre de su propia empresa: el auditor lee
 -- todo pero no escribe nada (tercera barrera, tras la API y la FK).
@@ -513,7 +547,7 @@ CREATE POLICY p_metricas_delete ON metricas_diarias
 -- hechos ni correcciones)
 GRANT USAGE ON SCHEMA public TO pids_app;
 GRANT SELECT ON zonas, empresas, usuarios, ingestas, v_viajes_vigentes TO pids_app;
-GRANT SELECT ON viajes TO pids_app;
+GRANT SELECT, INSERT ON viajes TO pids_app;
 GRANT SELECT, INSERT ON correcciones TO pids_app;
 GRANT SELECT, INSERT, DELETE ON metricas_diarias TO pids_app;
 GRANT SELECT, INSERT ON auditoria_accesos TO pids_app;

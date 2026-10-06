@@ -26,10 +26,11 @@ import psycopg
 from psycopg.rows import dict_row
 
 DIR_DATOS = Path(__file__).parent / "datos"
+DSN = os.environ["DATABASE_URL_ADMIN"]
+
 # Fichero de viajes dentro de datos/. Por defecto el real; con
 # DATOS_VIAJES=sinteticos.csv, el de scripts/generar_datos_sinteticos.py.
 FICHERO_VIAJES = Path(os.environ.get("DATOS_VIAJES") or "rows.csv").name
-DSN = os.environ["DATABASE_URL_ADMIN"]
 
 # ---------------------------------------------------------------------
 # E7: mapeo VendorID -> empresa propietaria.
@@ -53,6 +54,10 @@ USUARIOS = [
     ("marta@movilidadsur.es", "movilidad_sur", "usuario", "demo1234"),
     ("pablo@movilidadsur.es", "movilidad_sur", "operador", "demo1234"),
     ("auditor@plataforma.es", "plataforma", "auditor", "demo1234"),
+    # Cuentas de maquina: con ellas cada empresa envia sus viajes en tiempo
+    # real. La empresa del viaje sale de esta credencial, no del dato.
+    ("sistema@taxisnorte.es", "taxis_norte", "proveedor", "demo1234"),
+    ("sistema@movilidadsur.es", "movilidad_sur", "proveedor", "demo1234"),
 ]
 
 
@@ -201,6 +206,9 @@ def cargar_viajes(cur) -> dict:
                 importe,
             ))
 
+    # Carga masiva: el disparador de viajes no recalcula fila a fila; los
+    # cubos se calculan una sola vez al final con recalcular_todo().
+    cur.execute("SELECT set_config('app.carga_masiva', '1', true)")
     cur.executemany(
         """INSERT INTO viajes (
                empresa_id, vendor_id, pickup_ts, dropoff_ts, pasajeros,

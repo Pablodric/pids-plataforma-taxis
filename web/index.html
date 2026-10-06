@@ -50,6 +50,8 @@
   .etiqueta{background:rgba(255,255,255,.14);padding:3px 10px;border-radius:20px;font-size:12.5px;white-space:nowrap}
   .etiqueta.modo{background:var(--amarillo);color:#3A2E00;font-weight:500}
   .etiqueta.cuota.baja{background:#E8A33D;color:#2B1B00}
+  .etiqueta.vivo{background:#1D7A54;color:#fff}
+  .etiqueta.vivo.reconectando{background:#E8A33D;color:#2B1B00}
   header .hueco{flex:1}
   .btn-salir{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.3);padding:6px 14px}
 
@@ -186,6 +188,7 @@
     <span class="etiqueta" id="et-rol"></span>
     <span class="etiqueta modo" id="et-modo"></span>
     <span class="etiqueta cuota" id="et-cuota" title="Consultas disponibles en la ventana actual (cuota por empresa, E7)"></span>
+    <span class="etiqueta vivo" id="et-vivo" hidden></span>
     <span class="hueco"></span>
     <span class="etiqueta" id="et-email"></span>
     <button class="btn-salir" onclick="salir()">Salir</button>
@@ -424,6 +427,7 @@ document.getElementById("form-login").addEventListener("submit", e => {
 function salir(motivo) {
   if (token && sessionId) fetch(API + "/chat/" + encodeURIComponent(sessionId),
     {method: "DELETE", headers: {Authorization: "Bearer " + token}}).catch(() => {});
+  pararTiempoReal();
   token = null; perfil = null; ultimoPanel = null;
   almacen.del("pids_token");
   sessionId = nuevoId();
@@ -470,6 +474,7 @@ async function iniciarSesion() {
     (perfil.puede_corregir ? " También puedes corregir o cancelar viajes, desde el formulario o escribiéndomelo." : "") +
     "\nEscribe «ayuda» para ver ejemplos.", "bot", "Asistente");
   await refrescarPanel();
+  iniciarTiempoReal();
   pintarSugerencias();
   document.getElementById("mensaje").focus();
 }
@@ -588,13 +593,96 @@ async function nuevaConversacion() {
   añadirMensaje("Conversación nueva. ¿Qué quieres consultar?", "bot", "Asistente");
 }
 
+/* ---------------- tiempo real (WebSocket) ----------------
+   El servidor solo avisa de que hay un viaje nuevo de MI empresa; los datos
+   se piden igual que siempre (/datos/panel), con su cuota y su aislamiento.
+   Como cada refresco gasta una unidad de la cuota de consultas, se limita a
+   uno cada REFRESCO_MIN_MS aunque lleguen muchos avisos, y no se refresca
+   con la pestana oculta (al volver se pone al dia). */
+const REFRESCO_MIN_MS = 5000;
+let ws = null, wsActivo = false, wsEspera = 1000, wsReintento = null;
+let ultimoRefresco = 0, refrescoPendiente = null, refrescoAplazado = false;
+
+function pintarVivo(estado) {
+  const et = document.getElementById("et-vivo");
+  if (!estado) { et.hidden = true; return; }
+  et.hidden = false;
+  et.classList.toggle("reconectando", estado === "reconectando");
+  et.textContent = estado === "ok" ? "● en directo" : "○ reconectando…";
+  et.title = estado === "ok"
+    ? "El panel se actualiza solo cuando entra un viaje nuevo de tu empresa (WebSocket)"
+    : "Sin conexión en tiempo real; reintentando. El panel sigue funcionando al refrescar.";
+}
+
+function urlWs(ticket) {
+  const base = API.startsWith("http")
+    ? API.replace(/^http/, "ws")
+    : (location.protocol === "https:" ? "wss:" : "ws:") + "//" + location.host + API;
+  return base + "/ws/viajes?ticket=" + encodeURIComponent(ticket);
+}
+
+async function iniciarTiempoReal() {
+  pararTiempoReal();
+  wsActivo = true;
+  await conectarWs();
+}
+
+async function conectarWs() {
+  if (!wsActivo || !token) return;
+  let ticket;
+  try {
+    ticket = (await api("/ws/ticket", {method: "POST"})).ticket;
+  } catch (_) { return reintentarWs(); }
+  if (!wsActivo) return;
+  const conexion = new WebSocket(urlWs(ticket));
+  ws = conexion;
+  conexion.onopen = () => { wsEspera = 1000; pintarVivo("ok"); };
+  conexion.onmessage = e => {
+    let m; try { m = JSON.parse(e.data); } catch (_) { return; }
+    if (m.tipo === "viaje") programarRefresco();
+  };
+  conexion.onclose = () => { if (ws === conexion) { ws = null; reintentarWs(); } };
+}
+
+function reintentarWs() {
+  if (!wsActivo) return;
+  pintarVivo("reconectando");
+  clearTimeout(wsReintento);
+  wsReintento = setTimeout(conectarWs, wsEspera);
+  wsEspera = Math.min(wsEspera * 2, 15000);
+}
+
+function programarRefresco() {
+  if (refrescoPendiente || !perfil) return;
+  const espera = Math.max(0, REFRESCO_MIN_MS - (Date.now() - ultimoRefresco));
+  refrescoPendiente = setTimeout(async () => {
+    refrescoPendiente = null;
+    if (!perfil) return;
+    if (document.hidden) { refrescoAplazado = true; return; }
+    ultimoRefresco = Date.now();
+    await refrescarPanel(true, true);
+  }, espera);
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && refrescoAplazado) { refrescoAplazado = false; programarRefresco(); }
+});
+
+function pararTiempoReal() {
+  wsActivo = false;
+  clearTimeout(wsReintento); clearTimeout(refrescoPendiente);
+  refrescoPendiente = null; refrescoAplazado = false; wsEspera = 1000;
+  if (ws) { ws.onclose = null; ws.close(); ws = null; }
+  pintarVivo(null);
+}
+
 /* ---------------- panel de datos (una sola peticion) ---------------- */
-async function refrescarPanel(resaltar = false) {
+async function refrescarPanel(resaltar = false, silencioso = false) {
   let d;
   try {
     d = await api("/datos/panel");
   } catch (ex) {
-    if (ex.estado !== 401) añadirMensaje("No se pudo actualizar el panel: " + ex.message, "err");
+    if (ex.estado !== 401 && !silencioso) añadirMensaje("No se pudo actualizar el panel: " + ex.message, "err");
     return;
   }
   const anterior = ultimoPanel;

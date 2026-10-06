@@ -6,6 +6,8 @@ Expone cuatro bloques:
   /chat          el agente conversacional
   /datos/*       metricas en JSON (alimentan el panel web)
   /correcciones  E6: registrar y consultar correcciones
+  /ingesta/*     viajes nuevos en tiempo real (cuentas de proveedor)
+  /ws/*          avisos de viaje nuevo hacia el panel (WebSocket)
 
 Todas las rutas de datos y de chat pasan por:
   1. Validacion del JWT y del permiso      -> empresa y rol (E7)
@@ -14,17 +16,18 @@ Todas las rutas de datos y de chat pasan por:
 y registran el acceso en la auditoria, que alimenta las metricas de calidad.
 """
 
+import asyncio
 import json
 from contextlib import asynccontextmanager
 from datetime import UTC, date, datetime
 from typing import Literal
 
-from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi import Depends, FastAPI, HTTPException, Request, Response, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from app import config, cuotas, db, motor, nlu_llm, repositorio
+from app import config, cuotas, db, motor, nlu_llm, repositorio, tiempo_real
 from app import observabilidad as obs
 from app.auth import Sesion, autenticar, emitir_token, exigir_permiso, sesion_actual
 
@@ -37,6 +40,7 @@ async def ciclo_vida(app: FastAPI):
         import threading
         threading.Thread(target=nlu_llm.cliente().calentar, daemon=True).start()
     yield
+    tiempo_real.difusor.parar()
     db.cerrar_recursos()
 
 
@@ -80,6 +84,24 @@ class PeticionCorreccion(BaseModel):
     campo: Literal["importe_total", "distancia", "pasajeros", "propina"]
     valor_nuevo: float
     motivo: str = Field(min_length=3, max_length=500)
+
+
+class PeticionViaje(BaseModel):
+    """Un viaje nuevo, con los mismos nombres de columna que el CSV de la TLC.
+    No lleva empresa: la pone el servidor a partir del token (E7)."""
+    VendorID: int | None = None
+    tpep_pickup_datetime: str = Field(min_length=8, max_length=40)
+    tpep_dropoff_datetime: str | None = Field(default=None, max_length=40)
+    passenger_count: int | None = Field(default=None, ge=0, le=9)
+    trip_distance: float | None = Field(default=None, ge=0, le=500)
+    PULocationID: int = Field(ge=1, le=265)
+    DOLocationID: int | None = Field(default=None, ge=1, le=265)
+    payment_type: int | None = None
+    fare_amount: float | None = None
+    tip_amount: float | None = Field(default=None, ge=0, le=1000)
+    tolls_amount: float | None = None
+    congestion_surcharge: float | None = None
+    total_amount: float = Field(ge=-1000, le=10000)
 
 
 class PeticionCancelacion(BaseModel):
@@ -291,7 +313,7 @@ def quien_soy(sesion: Sesion = Depends(sesion_actual)):
 # ---------------------------------------------------------------------
 
 @app.post("/chat", tags=["chatbot"])
-def chat(peticion: PeticionChat, sesion: Sesion = Depends(sesion_actual)):
+def chat(peticion: PeticionChat, sesion: Sesion = Depends(exigir_permiso("consultar"))):
     estado_cuota = _con_cuota(sesion, "chat")
     historial, contexto = _cargar_conversacion(peticion.session_id, sesion)
 
@@ -483,3 +505,76 @@ def cancelar(
         f"viaje={peticion.viaje_id}", True,
     )
     return resultado
+
+
+# ---------------------------------------------------------------------
+# Ingesta en tiempo real
+# ---------------------------------------------------------------------
+
+FORMATOS_FECHA = ("%m/%d/%Y %I:%M:%S %p", "%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S")
+
+
+def _fecha_hora(valor: str | None, campo: str) -> datetime | None:
+    if not valor or not valor.strip():
+        return None
+    for formato in FORMATOS_FECHA:
+        try:
+            return datetime.strptime(valor.strip(), formato)
+        except ValueError:
+            continue
+    raise HTTPException(status_code=422, detail=f"Fecha no válida en {campo}: {valor!r}")
+
+
+@app.post("/ingesta/viajes", status_code=201, tags=["ingesta"])
+def ingerir_viaje(
+    peticion: PeticionViaje,
+    response: Response,
+    sesion: Sesion = Depends(exigir_permiso("ingerir")),
+):
+    """
+    Recibe un viaje recién terminado. La empresa propietaria es la de la
+    credencial que lo envía (nunca un campo del viaje), y la ingesta tiene
+    su propia cuota por empresa, separada de la de consultas.
+    """
+    try:
+        estado = cuotas.consumir(sesion.empresa_id, clase="ingesta")
+    except HTTPException:
+        obs.VIAJES_INGERIDOS.labels(sesion.empresa_id, "cuota_superada").inc()
+        raise
+    response.headers["X-Cuota-Limite"] = str(estado["limite"])
+    response.headers["X-Cuota-Restante"] = str(estado["restantes"])
+
+    recogida = _fecha_hora(peticion.tpep_pickup_datetime, "tpep_pickup_datetime")
+    llegada = _fecha_hora(peticion.tpep_dropoff_datetime, "tpep_dropoff_datetime")
+    resultado = repositorio.registrar_viaje(sesion, peticion.model_dump(), recogida, llegada)
+    if "error" in resultado:
+        obs.VIAJES_INGERIDOS.labels(sesion.empresa_id, "rechazado").inc()
+        return _o_error(resultado)
+    obs.VIAJES_INGERIDOS.labels(sesion.empresa_id, "aceptado").inc()
+    tiempo_real.publicar(sesion.empresa_id, resultado["viaje_id"], resultado["ingerido_en"])
+    return resultado
+
+
+# ---------------------------------------------------------------------
+# Tiempo real hacia el panel (WebSocket)
+# ---------------------------------------------------------------------
+
+@app.post("/ws/ticket", tags=["tiempo real"])
+def ws_ticket(sesion: Sesion = Depends(exigir_permiso("consultar"))):
+    """Ticket de un solo uso (30 s) para abrir /ws/viajes sin poner el JWT en la URL."""
+    return {"ticket": tiempo_real.emitir_ticket(sesion),
+            "expira_en_seg": tiempo_real.TTL_TICKET_SEG}
+
+
+@app.websocket("/ws/viajes")
+async def ws_viajes(ws: WebSocket, ticket: str = ""):
+    """
+    Avisos de viaje nuevo de TU empresa (el auditor recibe los de todas). El
+    ambito sale del ticket, que emitio el servidor: el cliente no elige canal.
+    No viajan datos de negocio, solo la senal para refrescar el panel.
+    """
+    datos = await asyncio.to_thread(tiempo_real.canjear_ticket, ticket)
+    if datos is None:
+        await ws.close(code=4401)   # sin aceptar antes: el navegador ve un rechazo del handshake
+        return
+    await tiempo_real.atender(ws, datos)

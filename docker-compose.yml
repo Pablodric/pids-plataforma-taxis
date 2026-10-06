@@ -141,6 +141,23 @@ services:
     restart: unless-stopped
 
   # -------------------------------------------------------------------
+  # Simulador de tiempo real: genera un viaje cada pocos segundos y lo
+  # envia a la API con la credencial de proveedor de su empresa. No toca
+  # la base de datos: entra por la misma puerta que cualquier cliente.
+  # -------------------------------------------------------------------
+  simulador:
+    build:
+      context: .
+      dockerfile: simulador/Dockerfile
+    environment:
+      API_URL: http://api:8000
+      INTERVALO_SEG: ${INTERVALO_SEG:-3}
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # -------------------------------------------------------------------
   # Panel web (chat + graficas). Nginx sirve los estaticos y hace de
   # proxy de /api hacia la API.
   # -------------------------------------------------------------------

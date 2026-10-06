@@ -1005,3 +1005,55 @@ def consistencia_cubo() -> dict:
     return {"descripcion": "Cubo incremental comparado con un recálculo completo desde el log",
             "cubos_comparados": f["cubos"], "cubos_distintos": f["distintos"],
             "consistente": f["distintos"] == 0}
+
+
+# ---------------------------------------------------------------------
+# Ingesta en tiempo real: un viaje nuevo
+# ---------------------------------------------------------------------
+
+def registrar_viaje(sesion: Sesion, v: dict, recogida, llegada) -> dict:
+    """
+    Guarda un viaje recibido en tiempo real a nombre de la empresa de la
+    sesion. El disparador de la base de datos recalcula solo el cubo
+    (empresa, fecha, distrito) al que pertenece. Las anomalias de calidad no
+    impiden la carga: se devuelven, y E6 permite corregirlas despues.
+    """
+    if not sesion.puede("ingerir"):
+        return _error("Tu rol no permite enviar viajes", 403)
+    if recogida is None:
+        return _error("Falta la hora de recogida", 422)
+
+    anomalias = []
+    if llegada is not None and llegada < recogida:
+        anomalias.append("llegada_anterior_a_salida")
+    if v["total_amount"] < 0:
+        anomalias.append("importe_negativo")
+    if v.get("trip_distance") == 0:
+        anomalias.append("distancia_cero")
+
+    try:
+        with _conexion(sesion) as conn, conn.cursor() as cur:
+            cur.execute(
+                """INSERT INTO viajes (
+                       empresa_id, vendor_id, pickup_ts, dropoff_ts, pasajeros,
+                       distancia, pu_location_id, do_location_id, tipo_pago,
+                       importe_base, propina, peajes, recargo_congestion, importe_total)
+                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                   RETURNING id, ingerido_en""",
+                (sesion.empresa_id, v.get("VendorID"), recogida, llegada,
+                 v.get("passenger_count"), v.get("trip_distance"),
+                 v["PULocationID"], v.get("DOLocationID"), v.get("payment_type"),
+                 v.get("fare_amount"), v.get("tip_amount"), v.get("tolls_amount"),
+                 v.get("congestion_surcharge"), v["total_amount"]),
+            )
+            fila = cur.fetchone()
+    except psycopg.errors.ForeignKeyViolation:
+        return _error("La zona de origen o de destino no existe en el catálogo", 422)
+
+    return {
+        "ok": True,
+        "viaje_id": fila["id"],
+        "empresa": sesion.empresa_id,
+        "ingerido_en": fila["ingerido_en"].isoformat(),
+        "anomalias": anomalias,
+    }

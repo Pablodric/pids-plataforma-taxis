@@ -35,6 +35,8 @@ CUOTA_RECHAZOS = Counter("pids_cuota_rechazos_total", "Peticiones rechazadas por
                          ["empresa"])
 CORRECCIONES = Counter("pids_correcciones_total", "Correcciones y cancelaciones registradas",
                        ["empresa", "tipo"])
+VIAJES_INGERIDOS = Counter("pids_viajes_ingeridos_total",
+                           "Viajes recibidos en tiempo real", ["empresa", "resultado"])
 LOGIN_FALLIDOS = Counter("pids_login_fallidos_total", "Intentos de login fallidos")
 LOGIN_BLOQUEOS = Counter("pids_login_bloqueos_total", "Logins bloqueados por demasiados fallos")
 OLLAMA_DISPONIBLE = Gauge("pids_ollama_disponible", "1 si el modelo de Ollama responde")

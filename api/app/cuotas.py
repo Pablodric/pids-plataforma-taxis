@@ -60,20 +60,25 @@ def cuota_de(empresa_id: str) -> int:
     return _cuotas_cache[empresa_id]
 
 
-def consumir(empresa_id: str, coste: int = 1) -> dict:
+def consumir(empresa_id: str, coste: int = 1, clase: str = "consultas") -> dict:
     """
     Registra 'coste' unidades de consumo. Lanza 429 si la empresa se pasa.
     Devuelve el estado de la cuota para exponerlo en cabeceras.
+
+    'clase' separa dos contadores por empresa: "consultas" (panel, chat,
+    correcciones; limite de la tabla 'empresas') e "ingesta" (viajes en
+    tiempo real; limite config.CUOTA_INGESTA).
     """
     global _script
     if _script is None or _script.registered_client is not db.cache():
         _script = db.cache().register_script(_SCRIPT)
 
-    limite = cuota_de(empresa_id)
+    ingesta = clase == "ingesta"
+    limite = config.CUOTA_INGESTA if ingesta else cuota_de(empresa_id)
     ventana = config.VENTANA_CUOTA_SEG
     ahora = time.time()
     permitido, usadas, primero = _script(
-        keys=[f"cuota:{empresa_id}"],
+        keys=[f"cuota:ingesta:{empresa_id}" if ingesta else f"cuota:{empresa_id}"],
         args=[ahora, ventana, limite, coste, uuid.uuid4().hex],
     )
     usadas = int(usadas)
@@ -83,7 +88,8 @@ def consumir(empresa_id: str, coste: int = 1) -> dict:
         raise HTTPException(
             status_code=429,
             detail=(
-                f"Tu empresa ha superado su cuota de {limite} consultas "
+                f"Tu empresa ha superado su cuota de {limite} "
+                f"{'viajes' if ingesta else 'consultas'} "
                 f"por minuto. Reintenta en {espera} s."
             ),
             headers={"Retry-After": str(espera)},

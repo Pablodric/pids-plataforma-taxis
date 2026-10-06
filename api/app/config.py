@@ -52,6 +52,10 @@ OLLAMA_TIMEOUT = float(os.environ.get("OLLAMA_TIMEOUT", "30"))
 
 # E7: ventana del limitador de consumo por empresa.
 VENTANA_CUOTA_SEG = _entero("VENTANA_CUOTA_SEG", 60)
+# Cuota propia de la ingesta en tiempo real (viajes por ventana y empresa).
+# Va aparte de la de consultas: asi el flujo de viajes de una empresa no deja
+# sin cuota a sus usuarios, y sigue sin poder saturar a las demas.
+CUOTA_INGESTA = _entero("CUOTA_INGESTA", 120)
 
 # Historial de conversacion
 MAX_TURNOS_HISTORIAL = _entero("MAX_TURNOS_HISTORIAL", 12)

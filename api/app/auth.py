@@ -30,6 +30,8 @@ PERMISOS_POR_ROL = {
     "usuario":  frozenset({"consultar"}),
     "operador": frozenset({"consultar", "corregir"}),
     "auditor":  frozenset({"consultar", "ver_global"}),
+    # Cuenta de maquina de una empresa: solo puede enviar viajes nuevos.
+    "proveedor": frozenset({"ingerir"}),
 }
 PERMISOS = frozenset().union(*PERMISOS_POR_ROL.values())
 
@@ -122,6 +124,7 @@ DESCRIPCION_PERMISO = {
     "consultar": "consultar datos",
     "corregir": "registrar correcciones (rol operador)",
     "ver_global": "ver metricas globales (rol auditor)",
+    "ingerir": "enviar viajes nuevos (cuenta de proveedor)",
 }
 
 
