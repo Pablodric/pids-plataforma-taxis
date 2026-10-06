@@ -10,6 +10,10 @@ datos: como cualquier proveedor, solo habla con la API.
     API_URL=http://api:8000 python simulador.py
     python simulador.py --solo-mostrar     # no envía, solo imprime
 
+Arranca en pausa: solo genera viajes de las empresas cuyo interruptor este
+encendido (boton "Simular viajes" del panel, GET /simulador). Con
+--solo-mostrar no consulta el interruptor.
+
 Variables de entorno: API_URL, INTERVALO_SEG, CLAVE_PROVEEDOR, RUTA_CSV.
 """
 
@@ -163,6 +167,42 @@ def _post(ruta: str, datos: dict, token: str | None = None) -> dict:
         return json.loads(respuesta.read())
 
 
+def _get(ruta: str, token: str) -> dict:
+    peticion = urllib.request.Request(  # noqa: S310 (API_URL se valida al arrancar)
+        API_URL + ruta, headers={"Authorization": f"Bearer {token}"}, method="GET"
+    )
+    with urllib.request.urlopen(peticion, timeout=5) as respuesta:  # noqa: S310
+        return json.loads(respuesta.read())
+
+
+_estado: dict[str, tuple[float, bool]] = {}
+
+
+def simulacion_activa(email: str, tokens: dict[str, str]) -> bool:
+    """Interruptor de la empresa de esa cuenta. Se consulta como mucho cada 2 s;
+    si la API no responde se considera apagado."""
+    ahora = time.monotonic()
+    visto = _estado.get(email)
+    if visto and ahora - visto[0] < 2:
+        return visto[1]
+    activo = False
+    for _ in range(2):  # segundo intento si el token ha caducado
+        try:
+            if email not in tokens:
+                tokens[email] = iniciar_sesion(email)
+            activo = bool(_get("/simulador", tokens[email]).get("activo"))
+            break
+        except urllib.error.HTTPError as error:
+            if error.code == 401:
+                tokens.pop(email, None)
+                continue
+            break
+        except (urllib.error.URLError, TimeoutError, ConnectionError):
+            break
+    _estado[email] = (ahora, activo)
+    return activo
+
+
 def iniciar_sesion(email: str) -> str:
     return _post("/auth/login", {"email": email, "password": CLAVE})["token"]
 
@@ -202,12 +242,25 @@ def main() -> None:
     rng = random.Random()
     tokens: dict[str, str] = {}
     destino = "solo se muestran" if solo_mostrar else f"se envían a {API_URL}"
-    print(f"Simulador en marcha: un viaje cada {INTERVALO_SEG:g} s, {destino} "
-          "(Ctrl+C para parar)", flush=True)
+    print(f"Simulador listo: un viaje cada {INTERVALO_SEG:g} s, {destino}. "
+          "Arranca en pausa: se enciende desde el panel (Ctrl+C para parar)", flush=True)
+    en_pausa = None
 
     try:
         while True:
-            plantilla = rng.choice(plantillas)
+            if solo_mostrar:
+                activas = set(CUENTAS.values())
+            else:
+                activas = {e for e in CUENTAS.values() if simulacion_activa(e, tokens)}
+            candidatas = [p for p in plantillas if CUENTAS.get(p["VendorID"]) in activas]
+            if bool(candidatas) == en_pausa or en_pausa is None:
+                en_pausa = not candidatas
+                print("Simulacion en pausa (se enciende desde el panel)" if en_pausa
+                      else "Simulacion encendida", flush=True)
+            if not candidatas:
+                time.sleep(1)
+                continue
+            plantilla = rng.choice(candidatas)
             viaje = make_row(plantilla, rng, end_date=date.today(), days_back=0)
             viaje = a_tiempo_real(viaje)
             print(viaje if solo_mostrar else enviar(viaje, tokens), flush=True)

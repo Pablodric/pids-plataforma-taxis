@@ -80,6 +80,22 @@ def canjear_ticket(ticket: str) -> dict | None:
 
 
 # ---------------------------------------------------------------------
+# Interruptor del simulador de viajes (demo)
+# ---------------------------------------------------------------------
+# El simulador es un contenedor aparte que solo habla con la API. El panel
+# (operador) enciende o apaga el interruptor de SU empresa; el simulador
+# lo consulta con su credencial de proveedor y solo genera viajes de las
+# empresas que lo tienen encendido. Sin clave en Redis = apagado.
+
+def simulador_activo(empresa_id: str) -> bool:
+    return _texto(db.cache().get(f"simulador:activo:{empresa_id}") or "0") == "1"
+
+
+def fijar_simulador(empresa_id: str, activo: bool) -> None:
+    db.cache().set(f"simulador:activo:{empresa_id}", "1" if activo else "0")
+
+
+# ---------------------------------------------------------------------
 # Publicacion (lado de la ingesta)
 # ---------------------------------------------------------------------
 
