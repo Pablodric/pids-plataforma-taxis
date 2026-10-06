@@ -200,7 +200,7 @@ async def atender(ws: WebSocket, datos: dict) -> None:
                 sacar.cancel()
                 await ws.send_text('{"tipo":"ping"}')
     except Exception:  # noqa: BLE001  (desconexion en mitad de un envio)
-        pass
+        log.debug("WebSocket cerrado en mitad de un envio", exc_info=True)
     finally:
         recibir.cancel()
         difusor.baja(ambito, cola)
