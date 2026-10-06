@@ -1,0 +1,98 @@
+# Variante ligera: toda la plataforma SIN Ollama (ahorra ~5 GB de descarga
+# y mucha memoria). El chat responde con el NLU por reglas.
+#   docker compose -f docker-compose.ligero.yml up --build
+name: pids
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: pids
+    volumes:
+    - datos_db_v4:/var/lib/postgresql/data
+    - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - pg_isready -U postgres -d pids
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+  cache:
+    image: redis:7-alpine
+    command:
+    - redis-server
+    - --appendonly
+    - 'no'
+    - --maxmemory
+    - 128mb
+    - --maxmemory-policy
+    - allkeys-lru
+    healthcheck:
+      test:
+      - CMD
+      - redis-cli
+      - ping
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+  ingesta:
+    build: ./ingest
+    environment:
+      DATABASE_URL_ADMIN: postgresql://postgres:postgres@db:5432/pids
+      DATOS_VIAJES: ${DATOS_VIAJES:-rows.csv}
+    volumes:
+    - ./ingest/datos:/ingest/datos:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: 'no'
+  api:
+    build: ./api
+    environment:
+      DATABASE_URL: postgresql://pids_app:pids_app_pw@db:5432/pids
+      REDIS_URL: redis://cache:6379/0
+      JWT_SECRETO: ${JWT_SECRETO:-}
+      LLM_PROVEEDOR: reglas
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODELO: ${LLM_MODELO:-claude-sonnet-5}
+      VENTANA_CUOTA_SEG: ${VENTANA_CUOTA_SEG:-60}
+    ports:
+    - 8000:8000
+    volumes:
+    - ./tests:/srv/tests:ro
+    - ./llm:/srv/llm:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+      ingesta:
+        condition: service_completed_successfully
+    restart: unless-stopped
+  simulador:
+    build:
+      context: .
+      dockerfile: simulador/Dockerfile
+    environment:
+      API_URL: http://api:8000
+      INTERVALO_SEG: ${INTERVALO_SEG:-3}
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+  web:
+    image: nginx:alpine
+    volumes:
+    - ./web:/usr/share/nginx/html:ro
+    - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+    - 8080:80
+    depends_on:
+    - api
+    restart: unless-stopped
+volumes:
+  datos_db_v4: null

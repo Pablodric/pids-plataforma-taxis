@@ -12,14 +12,23 @@ Los datos son **reales**: 999 viajes del dataset público *2020 Yellow Taxi Trip
 Data* de la ciudad de Nueva York (importes en **dólares**), enriquecidos con el
 catálogo oficial de las 265 zonas de la TLC.
 
-El asistente entiende las frases con un **modelo de lenguaje local afinado**
-(Qwen2.5 + LoRA, servido por Ollama). Sin API de pago y sin que los datos salgan
-de la máquina. Cómo se entrena y se evalúa: [`llm/README.md`](llm/README.md).
+Además del histórico, los viajes nuevos entran **en tiempo real** por la API:
+un simulador hace de proveedor de cada empresa y el panel se actualiza solo.
+
+El asistente entiende las frases con un **modelo de lenguaje local** (Qwen2.5
+de 1.500 M de parámetros, servido por Ollama) y, si el modelo falla o tarda,
+con reglas. Sin API de pago y sin que los datos salgan de la máquina. Afinar el
+modelo con LoRA está preparado pero **no se ha ejecutado** (faltó GPU): el
+dataset, el cuaderno y la evaluación están en [`llm/README.md`](llm/README.md).
 
 ![Arquitectura](docs/arquitectura.png)
 
 ### Lo que la distingue
 
+- **Ingesta en tiempo real.** Cada empresa envía sus viajes por
+  `POST /ingesta/viajes` con una cuenta de proveedor; la empresa del viaje sale
+  de esa credencial, nunca del dato. Un disparador recalcula solo el cubo
+  afectado y el panel se entera por WebSocket, sin recargar.
 - **Viaje en el tiempo.** Las cifras de cualquier instante pasado se
   reconstruyen desde el log de eventos, sin snapshots. Pulsando «⏱ ver cifras
   de antes» en el historial, o preguntando *«¿cuánto facturábamos antes de la
@@ -33,7 +42,7 @@ de la máquina. Cómo se entrena y se evalúa: [`llm/README.md`](llm/README.md).
   recálculo completo desde el log (`/metricas/calidad`).
 - **Medido, no supuesto.** Hay una prueba de carga «vecino ruidoso» con números
   reales, métricas Prometheus, `X-Request-ID` de extremo a extremo y CI con
-  lint, 105 pruebas y cobertura mínima del 80 %.
+  lint, 129 pruebas y cobertura mínima del 80 %.
 - **Decisiones documentadas** como ADR ([`docs/adr/`](docs/adr/)), incluidas
   las consecuencias negativas.
 
@@ -50,15 +59,22 @@ docker compose up --build
 ```
 
 Y ya está. El fichero `.env` es **opcional**. La primera vez el arranque crea la
-base de datos, aplica el esquema, carga el CSV, calcula las métricas iniciales
-y prepara el modelo de lenguaje en Ollama:
-
-- si has copiado el modelo afinado en `llm/modelo/` (ver [`llm/README.md`](llm/README.md)),
-  lo instala como `pids-nlu`;
-- si no, descarga el modelo base `qwen2.5:1.5b` (~1 GB, solo la primera vez).
+base de datos, aplica el esquema, carga el CSV, calcula las métricas iniciales,
+arranca el simulador (un viaje nuevo cada 3 s) y descarga en Ollama el modelo
+`qwen2.5:1.5b` (~1 GB, solo la primera vez).
 
 La plataforma **no espera** a esa descarga: mientras tanto el chat responde con
 las reglas, y la cabecera del panel indica en cada momento qué motor responde.
+
+**Equipos con poca memoria.** La imagen de Ollama pesa casi 4 GB. Para arrancar
+todo lo demás sin ella, con el chat por reglas:
+
+```bash
+docker compose -f docker-compose.ligero.yml up --build
+```
+
+Para ver los viajes que envía el simulador: `docker compose logs -f simulador`.
+Para pararlo sin parar el resto: `docker compose stop simulador`.
 
 Cuando termine, abre en el navegador:
 
@@ -84,12 +100,17 @@ Contraseña para todos: `demo1234`. En el panel basta con pulsar el usuario.
 | `marta@movilidadsur.es` | Movilidad Sur | usuario | Consultar sus métricas |
 | `pablo@movilidadsur.es` | Movilidad Sur | operador | Además, corregir y cancelar viajes |
 | `auditor@plataforma.es` | Plataforma | auditor | Ver todas las empresas, **solo lectura** |
+| `sistema@taxisnorte.es` | Taxis del Norte | proveedor | Solo enviar viajes nuevos (cuenta de máquina) |
+| `sistema@movilidadsur.es` | Movilidad Sur | proveedor | Solo enviar viajes nuevos (cuenta de máquina) |
+
+Las dos cuentas de proveedor son las que usa el simulador. No aparecen en la
+pantalla de entrada porque no pueden consultar ni usar el chat.
 
 ### Motores del chatbot
 
 | `LLM_PROVEEDOR` | Qué entiende las frases | Cuándo usarlo |
 |---|---|---|
-| `ollama` (por defecto) | Modelo local afinado `pids-nlu`, o el base `qwen2.5:1.5b` mientras no lo entrenes | Lo normal |
+| `ollama` (por defecto) | Modelo local `qwen2.5:1.5b`, con unos pocos ejemplos en el mensaje | Lo normal |
 | `reglas` | NLU por reglas en español (`api/app/nlu.py`) | Equipos muy justos de memoria |
 | `anthropic` | Agente con *function calling* sobre la API de Anthropic (`LLM_API_KEY`) | Si tienes clave |
 
@@ -194,6 +215,17 @@ Cómo se procesa cada mensaje: autenticación, cuota, NLU con respaldo, confirma
 viaje en el tiempo y permisos.
 [`docs/flujo_chatbot.png`](docs/flujo_chatbot.png)
 
+### Escena 7 — Viajes en tiempo real (E7)
+
+1. Abre dos ventanas: el panel como **ana** y una terminal con
+   `docker compose logs -f simulador`.
+2. Cada línea `viaje N -> taxis_norte` de la terminal sube en uno el contador
+   de viajes de Ana, sin recargar (etiqueta verde «en directo»).
+3. Las líneas `-> movilidad_sur` no mueven su panel: son de la otra empresa.
+   Entra como **marta** y verás lo contrario.
+4. La empresa del viaje sale de la cuenta con la que se envía, no del dato:
+   aunque un proveedor cambiara el `VendorID`, el viaje se guardaría como suyo.
+
 ### Observabilidad
 
 - `http://localhost:8000/metrics`: formato Prometheus, con latencias por ruta
@@ -206,7 +238,7 @@ viaje en el tiempo y permisos.
 
 ## 3. Comprobar que funciona de verdad
 
-Hay **105 pruebas automáticas** (cobertura del 85 %, `ruff` sin avisos) que se ejecutan contra la API, el Postgres y el
+Hay **129 pruebas automáticas** (cobertura del 86 %, `ruff` sin avisos) que se ejecutan contra la API, el Postgres y el
 Redis reales, no contra simulaciones. La única excepción es el modelo de
 lenguaje: se sustituye por un servidor que habla el protocolo de Ollama, para
 probar la integración sin descargar un modelo. La calidad del modelo se mide
@@ -233,7 +265,11 @@ Las pruebas cubren, entre otras cosas:
   simultáneas y que el panel solo gasta una unidad por refresco.
 - Que el chatbot **pide confirmación** antes de escribir, entiende fechas y
   preguntas de seguimiento, y que un fallo del modelo no duplica una corrección.
-- Que con Ollama se envía el esquema JSON y el prompt exacto del entrenamiento,
+- Que un viaje nuevo entra a nombre de la empresa de la **credencial** aunque
+  el dato diga otra, que solo la cuenta de proveedor puede enviarlos (tampoco
+  por SQL directo), que la ingesta tiene su propia cuota y que el aviso en
+  directo llega **solo a la empresa del viaje**.
+- Que con Ollama se envía el esquema JSON y el prompt del contrato,
   que un viaje **inventado por el modelo se descarta**, y que si Ollama no
   responde o devuelve algo inválido el chat sigue funcionando con reglas.
 - Que las cifras del pasado se reconstruyen bien (antes y después de una
@@ -250,7 +286,8 @@ Las pruebas cubren, entre otras cosas:
 
 ```
 .
-├── docker-compose.yml       Orquestación de los 7 servicios (con ollama y ollama-init)
+├── docker-compose.yml       Orquestación de los 8 servicios (con ollama, ollama-init y simulador)
+├── docker-compose.ligero.yml  Lo mismo sin Ollama: chat por reglas, para equipos justos
 ├── docker-compose.gpu.yml   Opcional: Ollama con GPU NVIDIA
 ├── .env.example             Plantilla de configuración (opcional)
 ├── CAMBIOS.md               Qué se corrigió en la v3 y por qué
@@ -271,9 +308,11 @@ Las pruebas cubren, entre otras cosas:
 │   ├── esquema_nlu.py       Contrato JSON del NLU (modelo, dataset y evaluación)
 │   ├── nlu_llm.py           NLU con el modelo de Ollama: esquema, validación y anclaje
 │   ├── nlu.py               NLU por reglas (respaldo y referencia de evaluación)
+│   ├── tiempo_real.py       Avisos de viaje nuevo al panel: WebSocket, tickets y Redis
 │   ├── observabilidad.py    Métricas Prometheus, X-Request-ID y logs JSON
 │   └── motor.py             Gestión del diálogo: confirmaciones, contexto y motores
-├── llm/                     Fine-tuning del modelo (ver llm/README.md)
+├── simulador/               Proveedor simulado: envía un viaje cada 3 s por la API
+├── llm/                     Afinado del modelo: preparado, no ejecutado (ver llm/README.md)
 │   ├── generar_dataset.py   Dataset sintético con test de plantillas no vistas
 │   ├── entrenar.py          LoRA sobre Qwen2.5-Instruct
 │   ├── entrenar_colab.ipynb Todo el proceso en una GPU gratuita de Colab
@@ -281,18 +320,19 @@ Las pruebas cubren, entre otras cosas:
 │   ├── evaluar.py           Reglas vs modelo base vs modelo afinado
 │   ├── instalar_en_ollama.sh  Lo ejecuta el servicio ollama-init
 │   ├── datos/               Dataset generado (train/val/test)
-│   └── modelo/              Aquí va el modelo afinado (pids-nlu.gguf + Modelfile)
+│   └── modelo/              Aquí iría el modelo afinado (vacío: no se ha entrenado)
 ├── nginx/default.conf       Servidor del panel y proxy /api
 ├── web/
 │   ├── index.html           Panel de chat, gráficas y correcciones
 │   └── vendor/chart.umd.js  Chart.js 4.4.1 (MIT), para no depender de internet
-├── tests/                   105 pruebas de E6, E7, chatbot, Ollama, auditoría y observabilidad
+├── tests/                   129 pruebas de E6, E7, ingesta, tiempo real, chatbot y auditoría
 ├── scripts/
 │   ├── vecino_ruidoso.py    Prueba de carga: ¿nota una empresa el abuso de otra?
 │   └── generar_datos_sinteticos.py  Más viajes, a partir de los reales
 ├── .github/workflows/       CI: ruff, pruebas con cobertura, build y arranque con Docker
 └── docs/
     ├── arquitectura.png     Diagrama (se regenera con docs/diagramas/arquitectura.py)
+    ├── arquitectura_resumen.png  El mismo en ocho cajas, para diapositivas
     ├── flujo_chatbot.png    Flujo de una conversación del chatbot, paso a paso
     ├── adr/                 Registro de decisiones de arquitectura (7 ADR)
     ├── arquitectura.md      Componentes y por qué cada tecnología

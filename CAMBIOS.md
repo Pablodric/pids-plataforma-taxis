@@ -1,3 +1,21 @@
+# Cambios de la versión 6: tiempo real
+
+| Qué | Para qué |
+|---|---|
+| `POST /ingesta/viajes` y rol **proveedor** (una cuenta de máquina por empresa) | Que cada empresa envíe viajes nuevos con la plataforma en marcha. La empresa del viaje sale de la credencial, nunca del `VendorID` |
+| Política RLS de inserción en `viajes` y disparador `viaje_recalcula` | Que la base de datos solo acepte viajes de la empresa de la sesión, y que cada viaje nuevo recalcule solo su cubo |
+| Cuota de ingesta aparte (120 viajes/min por empresa) | Que el flujo de viajes no deje sin cuota a los usuarios de esa empresa ni sature a las demás |
+| `simulador/` (octavo servicio) | Hacer de proveedor en la demo: un viaje cada 3 s, enviado por la API |
+| `api/app/tiempo_real.py`: WebSocket con ticket de un solo uso y avisos por Redis | Que el panel se actualice solo, recibiendo únicamente los avisos de su empresa |
+| `docker-compose.ligero.yml` | Arrancar sin Ollama en equipos con poca memoria |
+| Diagrama de arquitectura actualizado y versión resumida para diapositivas | Que la documentación refleje los 8 servicios y el tiempo real |
+
+Pruebas: de 105 a 129. El modelo de lenguaje es el base: el afinado con LoRA
+sigue preparado en `llm/` pero no se ha ejecutado, y la documentación deja de
+presentarlo como hecho.
+
+---
+
 # Cambios de la versión 5.2: datos sintéticos
 
 | Qué | Para qué |

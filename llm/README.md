@@ -1,4 +1,10 @@
-# NLU con un modelo local afinado (Ollama + LoRA)
+# NLU con un modelo local (Ollama) y su afinado con LoRA
+
+> **Estado.** La plataforma funciona hoy con el modelo **base** `qwen2.5:1.5b`
+> y, si falla, con reglas. El afinado con LoRA que describe este documento está
+> preparado (dataset, entrenamiento, exportación y evaluación) pero **no se ha
+> ejecutado** por falta de GPU: `llm/modelo/` está vacío y en la tabla de
+> resultados solo está medida la fila de las reglas.
 
 El chatbot usa un modelo de lenguaje **local**, servido por Ollama y afinado
 con LoRA para esta plataforma. Sin API de pago, sin que los datos salgan de
